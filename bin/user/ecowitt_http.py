@@ -153,6 +153,9 @@ DEFAULT_MAX_TRIES = 3
 DEFAULT_RETRY_WAIT = 2
 # default timeout when fetching data from a URL
 DEFAULT_URL_TIMEOUT = 3
+# default grace period after last_good_ts/start_ts after which we accept
+# catchup records
+DEFAULT_CATCHUP_GRACE = 0
 # default max tries when downloading a catchup file
 DEFAULT_CATCHUP_RETRIES = 3
 # When run as a service the default age in seconds after which API data is
@@ -3677,9 +3680,13 @@ class EcowittDeviceCatchup:
                                     url_timeout=self.url_timeout)
         # save the device unit system to be used, if not specified use the default
         self.unit_system = options.get('unit_system', UNIT_SYSTEM)
+        # save the grace time we will add to last_good_ts/start_ts to determine
+        # which catchup records we accept
+        self.catchup_grace = weeutil.weeutil.to_int(options.get('catchup_grace',
+                                                                DEFAULT_CATCHUP_GRACE))
         # save the max number of retries when attempting to access a device
         # file
-        self.max_catchup_retries = options.get('max_catchup_retries',
+        self.max_catchup_retries = options.get('max_retries',
                                                DEFAULT_CATCHUP_RETRIES)
         # Attempt to get the SD card info, this serves as a check whether the
         # devices support catchup via locally stored history data files. Wrap
@@ -3856,7 +3863,7 @@ class EcowittDeviceCatchup:
                 continue
             # process the record further if the timestamp is within our span of
             # interest, otherwise skip the record
-            if start_ts is None or ts > start_ts:
+            if start_ts is None or ts > start_ts + self.catchup_grace:
                 # if we have not already done so obtain the units in use
                 if len(units) == 0:
                     units = self.get_units(row.keys())
@@ -4181,11 +4188,14 @@ class EcowittHttpDriver(weewx.drivers.AbstractDevice, EcowittCommon):
         # TODO. Is this init complete? Correct parameters? Second call?
         super(EcowittHttpDriver, self).__init__(unit_system=self.unit_system, **stn_dict)
         # save the catchup settings
-        catchup_dict = stn_dict.get('catchup_config', dict())
+        catchup_dict = stn_dict.get('catchup', dict())
         # the source
         self.catchup_source = catchup_dict.get('catchup_source')
+        # the grace period applied to any catchup record timestamps
+        self.catchup_grace = weeutil.weeutil.to_int(catchup_dict.get('grace',
+                                                                     DEFAULT_CATCHUP_GRACE))
         # the number of retries to use for catchup file downloads
-        self.catchup_retries = catchup_dict.get('catchup_retries', DEFAULT_CATCHUP_RETRIES)
+        self.catchup_retries = catchup_dict.get('retries', DEFAULT_CATCHUP_RETRIES)
         # start the EcowittHttpCollector in its own thread
         self.collector.startup()
 
@@ -4486,6 +4496,7 @@ class EcowittHttpDriver(weewx.drivers.AbstractDevice, EcowittCommon):
             try:
                 return EcowittDeviceCatchup(ip_address=self.ip_address,
                                             unit_system=self.unit_system,
+                                            catchup_grace=self.catchup_grace,
                                             catchup_retries=self.catchup_retries,
                                             url_timeout=self.url_timeout,
                                             driver_debug=self.driver_debug)
