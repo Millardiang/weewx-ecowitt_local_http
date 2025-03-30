@@ -18,7 +18,7 @@ PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with
 this program.  If not, see https://www.gnu.org/licenses/.
 
-Version: 0.1.0a18                                  Date: X March 2025
+Version: 0.1.0a19                                  Date: X March 2025
 
 Revision History
     X March 2025            v0.1.0
@@ -131,7 +131,7 @@ log = logging.getLogger(__name__)
 
 
 DRIVER_NAME = 'EcowittHttp'
-DRIVER_VERSION = '0.1.0a18'
+DRIVER_VERSION = '0.1.0a19'
 
 # device models that are supported by the driver
 SUPPORTED_DEVICES = ('GW1100', 'GW1200', 'GW2000',
@@ -9426,7 +9426,7 @@ class EcowittSensors:
                     # we have a match, set a flag so we know if we have
                     # corresponding sensor in our sensor data
                     found = False
-                    # now iterate over the sensors we know about in our sesnor data
+                    # now iterate over the sensors we know about in our sensor data
                     for model, data in self.all_sensor_data.items():
                         # do we have a channelised or non-channelised sensor,
                         # a non-channelised sensor will have an 'address' key
