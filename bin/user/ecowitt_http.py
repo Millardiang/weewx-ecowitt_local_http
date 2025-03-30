@@ -18,7 +18,7 @@ PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with
 this program.  If not, see https://www.gnu.org/licenses/.
 
-Version: 0.1.0a17                                  Date: X March 2025
+Version: 0.1.0a18                                  Date: X March 2025
 
 Revision History
     X March 2025            v0.1.0
@@ -131,7 +131,7 @@ log = logging.getLogger(__name__)
 
 
 DRIVER_NAME = 'EcowittHttp'
-DRIVER_VERSION = '0.1.0a17'
+DRIVER_VERSION = '0.1.0a18'
 
 # device models that are supported by the driver
 SUPPORTED_DEVICES = ('GW1100', 'GW1200', 'GW2000',
@@ -3856,7 +3856,7 @@ class EcowittDeviceCatchup:
                 continue
             # process the record further if the timestamp is within our span of
             # interest, otherwise skip the record
-            if start_ts is None or ts >= start_ts:
+            if start_ts is None or ts > start_ts:
                 # if we have not already done so obtain the units in use
                 if len(units) == 0:
                     units = self.get_units(row.keys())
