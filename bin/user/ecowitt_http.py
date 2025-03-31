@@ -581,8 +581,9 @@ class InvertibleSetError(Exception):
 
     def __init__(self, value):
         self.value = value
+        # TODO. What is this?
         msg = 'The value "{}" is already in the mapping.'
-        super(InvertibleSetError, self).__init__(msg.format(value))
+        super().__init__(msg.format(value))
 
 
 class InvertibleMap(dict):
@@ -615,7 +616,7 @@ class InvertibleMap(dict):
     """
 
     def __init__(self, *args, inverse=None, **kwargs):
-        super(InvertibleMap, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         if inverse is None:
             _inv = dict()
             for key, value in self.items():
@@ -635,14 +636,14 @@ class InvertibleMap(dict):
         self._del_item(key)
 
     def _del_item(self, key):
-        super(InvertibleMap, self).__delitem__(key)
+        super().__delitem__(key)
 
     def _set_item(self, key, value):
-        super(InvertibleMap, self).__setitem__(key, value)
+        super().__setitem__(key, value)
 
     def pop(self, key):
         self.inverse._del_item(self[key])
-        return super(InvertibleMap, self).pop(key)
+        return super().pop(key)
 
 
 # ============================================================================
@@ -1192,9 +1193,9 @@ class HttpMapper(FieldMapper):
         # otherwise fall back to our default_map
         def_map = default_map if default_map is not None else HttpMapper.default_map
         # initialise my parent
-        super(HttpMapper, self).__init__(driver_debug=driver_debug,
-                                         default_map=def_map,
-                                         **mapper_config)
+        super().__init__(driver_debug=driver_debug,
+                         default_map=def_map,
+                         **mapper_config)
         # We must have a mapping from device field 'datetime' to the WeeWX
         # packet field 'dateTime', too many parts of the driver depend on this.
         # So check to ensure this mapping is in place as the user could have
@@ -1401,9 +1402,9 @@ class SdMapper(FieldMapper):
         # obtain the default map to be used
         def_map = default_map if default_map is not None else SdMapper.default_map
         # initialise my super class
-        super(SdMapper, self).__init__(driver_debug=driver_debug,
-                                       default_map=def_map,
-                                       **mapper_config)
+        super().__init__(driver_debug=driver_debug,
+                         default_map=def_map,
+                         **mapper_config)
         # convert our map to a ReversibleMap
         self.field_map = InvertibleMap(self.field_map) if self.field_map is not None else None
 
@@ -3192,7 +3193,7 @@ class EcowittNetCatchup(Catchup):
         """Initialise an EcowittNetCatchup object."""
 
         # initialise my parent
-        super(EcowittNetCatchup, self).__init__()
+        super().__init__()
         try:
             # save the user Ecowitt.net API key
             self.api_key = options['api_key']
@@ -4186,7 +4187,7 @@ class EcowittHttpDriver(weewx.drivers.AbstractDevice, EcowittCommon):
         self.driver_debug = DebugOptions(**stn_dict)
         # now initialize my superclasses
         # TODO. Is this init complete? Correct parameters? Second call?
-        super(EcowittHttpDriver, self).__init__(unit_system=self.unit_system, **stn_dict)
+        super().__init__(unit_system=self.unit_system, **stn_dict)
         # save the catchup settings
         catchup_dict = stn_dict.get('catchup', dict())
         # the source
@@ -4623,7 +4624,7 @@ class EcowittHttpCollector(Collector):
         """Initialise a EcowittHttpCollector object."""
 
         # initialize my base class
-        super(EcowittHttpCollector, self).__init__()
+        super().__init__()
 
         # interval between polls of the API, defaults to DEFAULT_POLL_INTERVAL
         self.poll_interval = poll_interval
