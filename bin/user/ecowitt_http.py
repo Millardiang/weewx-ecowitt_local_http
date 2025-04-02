@@ -3687,6 +3687,7 @@ class EcowittDeviceCatchup:
                                                                 DEFAULT_CATCHUP_GRACE))
         # save the max number of retries when attempting to access a device
         # file
+        # TODO. Look at making parameter, property and default names match better
         self.max_catchup_retries = options.get('max_retries',
                                                DEFAULT_CATCHUP_RETRIES)
         # Attempt to get the SD card info, this serves as a check whether the
