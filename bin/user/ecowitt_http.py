@@ -3673,14 +3673,15 @@ class EcowittDeviceCatchup:
             # on. Raise a CatchupObjectError exception with an error message.
             raise CatchupObjectError('Device IP address not found.')
         # save the URL download timeout
-        self.url_timeout = options.get('url_timeout',
-                                       DEFAULT_URL_TIMEOUT)
+        self.url_timeout = weeutil.weeutil.to_int(options.get('url_timeout',
+                                                              DEFAULT_URL_TIMEOUT))
         # obtain an EcowittDevice object, we will use this object for
         # interacting with the device
         self.device = EcowittDevice(ip_address=self.ip_address,
                                     url_timeout=self.url_timeout)
         # save the device unit system to be used, if not specified use the default
-        self.unit_system = options.get('unit_system', UNIT_SYSTEM)
+        self.unit_system = weeutil.weeutil.to_int(options.get('unit_system',
+                                                              UNIT_SYSTEM))
         # save the grace time we will add to last_good_ts/start_ts to determine
         # which catchup records we accept
         self.catchup_grace = weeutil.weeutil.to_int(options.get('catchup_grace',
@@ -3688,8 +3689,8 @@ class EcowittDeviceCatchup:
         # save the max number of retries when attempting to access a device
         # file
         # TODO. Look at making parameter, property and default names match better
-        self.max_catchup_retries = options.get('max_retries',
-                                               DEFAULT_CATCHUP_RETRIES)
+        self.max_catchup_retries = weeutil.weeutil.to_int(options.get('max_retries',
+                                                                      DEFAULT_CATCHUP_RETRIES))
         # Attempt to get the SD card info, this serves as a check whether the
         # devices support catchup via locally stored history data files. Wrap
         # in a try..except so an exception can be raised should the device not
