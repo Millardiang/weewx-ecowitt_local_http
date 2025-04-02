@@ -215,12 +215,28 @@ class DeviceCatchupTestCase(unittest.TestCase):
         # we will be manipulating the catchup device config so make a copy that
         # we can alter without affecting other test methods
         device_catchup_config_copy = configobj.ConfigObj(self.device_catchup_config)
+
+        # first test a minimal config, pretty much just IP address and the rest
+        # are defaults
         # obtain an EcowittDeviceCatchup object
         device_catchup = self.get_device_catchup(config=device_catchup_config_copy,
                                                  caller='test_device_catchup_init')
         # test the IP address was properly set
         self.assertSequenceEqual(device_catchup.ip_address,
                                  device_catchup_config_copy['ip_address'])
+        # test url_timeout was properly set
+        self.assertEqual(device_catchup.url_timeout,
+                         user.ecowitt_http.DEFAULT_URL_TIMEOUT)
+        # test unit_system was properly set
+        self.assertEqual(device_catchup.unit_system,
+                         user.ecowitt_http.UNIT_SYSTEM)
+        # test catchup_grace was properly set
+        self.assertEqual(device_catchup.catchup_grace,
+                         user.ecowitt_http.DEFAULT_CATCHUP_GRACE)
+        # test max_catchup_retries was properly set
+        self.assertEqual(device_catchup.max_catchup_retries,
+                         user.ecowitt_http.DEFAULT_CATCHUP_RETRIES)
+        # non-default values
 
     @staticmethod
     def get_device_catchup(config, caller):
