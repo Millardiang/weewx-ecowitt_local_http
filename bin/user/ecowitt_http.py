@@ -9493,7 +9493,9 @@ class EcowittSensors:
         only, eg. 'wh51', 'wn34' etc.
         """
 
-        return tuple({a['img'] for a in self.all_sensor_data})
+        # our models are the keys in all_sensor_data, return a sorted tuple of
+        # these keys
+        return tuple(sorted(self.all_sensor_data.keys()))
 
     @property
     def all(self):
@@ -9504,7 +9506,27 @@ class EcowittSensors:
         where applicable, eg. 'wh51_ch1', 'wn34_ch3' etc.
         """
 
-        return tuple([self.sensor_address[int(a['type'])] for a in self.all_sensor_data])
+        # initialise a list to hold our result
+        all_sensors = []
+        # iterate over each sensor_data key value pair, this will yield the
+        # sensor model and either a dict sensor metadata or, for channelised
+        # sensors, a dict keyed by channel of channel data
+        for model, data in self.all_sensor_data.items():
+            # iterate over the key value pairs in the 'data', then determine
+            # whether we have a channelised sensor
+            for ch, ch_data in data.items():
+                # is the channel data a dict
+                if hasattr(ch_data, 'keys'):
+                    # we have channelised sensor, add the sensor and channel
+                    # number
+                    all_sensors.append(f'{model}_{ch}')
+                else:
+                    # we have a non-channelised sensor
+                    all_sensors.append(model)
+                    # we have finished with this sensor, move onto the next
+                    break
+        # return our result as a sorted tuple
+        return tuple(sorted(all_sensors))
 
     @property
     def enabled(self):
@@ -9516,8 +9538,31 @@ class EcowittSensors:
         etc.
         """
 
-        return tuple([self.sensor_address[int(a['type'])]
-                      for a in self.all_sensor_data if a['idst'] == '1'])
+        # initialise a list to hold our result
+        enabled = []
+        # iterate over each sensor_data key value pair, this will yield the
+        # sensor model and either a dict sensor metadata or, for channelised
+        # sensors, a dict keyed by channel of channel data
+        for model, data in self.all_sensor_data.items():
+            # iterate over the key value pairs in the 'data', then determine
+            # whether we have a channelised sensor
+            for ch, ch_data in data.items():
+                # is the channel data a dict
+                if hasattr(ch_data, 'keys'):
+                    # we have channelised sensor, now check if the sensor is
+                    # enabled
+                    if ch_data.get('enabled'):
+                        # the sensor is connected, add it to our list
+                        enabled.append(f'{model}_{ch}')
+                else:
+                    # we have a non-channelised sensor
+                    if data.get('enabled'):
+                        # the sensor is connected, add it to our list
+                        enabled.append(model)
+                    # we have finished with this sensor, move onto the next
+                    break
+        # return our result as a sorted tuple
+        return tuple(sorted(enabled))
 
     @property
     def disabled(self):
@@ -9528,8 +9573,31 @@ class EcowittSensors:
         applicable, eg. 'wh51_ch1', 'wn34_ch3' etc.
         """
 
-        return tuple([self.sensor_address[int(a['type'])]
-                      for a in self.all_sensor_data if a['idst'] == '0'])
+        # initialise a list to hold our result
+        disabled = []
+        # iterate over each sensor_data key value pair, this will yield the
+        # sensor model and either a dict sensor metadata or, for channelised
+        # sensors, a dict keyed by channel of channel data
+        for model, data in self.all_sensor_data.items():
+            # iterate over the key value pairs in the 'data', then determine
+            # whether we have a channelised sensor
+            for ch, ch_data in data.items():
+                # is the channel data a dict
+                if hasattr(ch_data, 'keys'):
+                    # we have channelised sensor, now check if the sensor is
+                    # disabled
+                    if not ch_data.get('enabled'):
+                        # the sensor is disabled, add it to our list
+                        disabled.append(f'{model}_{ch}')
+                else:
+                    # we have a non-channelised sensor
+                    if not data.get('enabled'):
+                        # the sensor is disabled, add it to our list
+                        disabled.append(model)
+                    # we have finished with this sensor, move onto the next
+                    break
+        # return our result as a sorted tuple
+        return tuple(sorted(disabled))
 
     @property
     def learning(self):
@@ -9540,8 +9608,30 @@ class EcowittSensors:
         applicable, eg. 'wh51_ch1', 'wn34_ch3' etc.
         """
 
-        return tuple([self.sensor_address[int(a['type'])]
-                      for a in self.all_sensor_data if a['id'] == 'FFFFFFFF'])
+        # initialise a list to hold our result
+        learning = []
+        # iterate over each sensor_data key value pair, this will yield the
+        # sensor model and either a dict sensor metadata or, for channelised
+        # sensors, a dict keyed by channel of channel data
+        for model, data in self.all_sensor_data.items():
+            # iterate over the key value pairs in the 'data', then determine
+            # whether we have a channelised sensor
+            for ch, ch_data in data.items():
+                # is the channel data a dict
+                if hasattr(ch_data, 'keys'):
+                    # we have channelised sensor, now check if the sensor is connected
+                    if ch_data.get('id') == 'FFFFFFFF':
+                        # the sensor is learning, add it to our list
+                        learning.append(f'{model}_{ch}')
+                else:
+                    # we have a non-channelised sensor
+                    if data.get('id') == 'FFFFFFFF':
+                        # the sensor is learning, add it to our list
+                        learning.append(model)
+                    # we have finished with this sensor, move onto the next
+                    break
+        # return our result as a sorted tuple
+        return tuple(sorted(learning))
 
     @property
     def connected(self):
@@ -9552,8 +9642,34 @@ class EcowittSensors:
         applicable, eg. 'wh51_ch1', 'wn34_ch3' etc.
         """
 
-        return tuple([self.sensor_address[int(a['type'])] for a in self.all_sensor_data
-                      if a['idst'] == '1' and a['id'] != 'FFFFFFFE' and a['id'] != 'FFFFFFFF'])
+        # initialise a list to hold our result
+        connected = []
+        # iterate over each sensor_data key value pair, this will yield the
+        # sensor model and either a dict sensor metadata or, for channelised
+        # sensors, a dict keyed by channel of channel data
+        for model, data in self.all_sensor_data.items():
+            # iterate over the key value pairs in the 'data', then determine
+            # whether we have a channelised sensor
+            for ch, ch_data in data.items():
+                # is the channel data a dict
+                if hasattr(ch_data, 'keys'):
+                    # we have channelised sensor, now check if the sensor is connected
+                    if (ch_data.get('enabled') and
+                            ch_data.get('id') != 'FFFFFFFE' and
+                            ch_data.get('id') != 'FFFFFFFF'):
+                        # the sensor is connected, add it to our list
+                        connected.append(f'{model}_{ch}')
+                else:
+                    # we have a non-channelised sensor
+                    if (data.get('enabled') and
+                            data.get('id') != 'FFFFFFFE'
+                            and data.get('id') != 'FFFFFFFF'):
+                        # the sensor is connected, add it to our list
+                        connected.append(model)
+                    # we have finished with this sensor, move onto the next
+                    break
+        # return our result as a sorted tuple
+        return tuple(sorted(connected))
 
     def batt_state_desc(self, model, sensor_data):
         """Return the descriptive text for the battery state of a given sensor.

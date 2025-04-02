@@ -218,7 +218,9 @@ class DeviceCatchupTestCase(unittest.TestCase):
         # obtain an EcowittDeviceCatchup object
         device_catchup = self.get_device_catchup(config=device_catchup_config_copy,
                                                  caller='test_device_catchup_init')
-        print("device_catchup ip address=%s" % device_catchup.ip_address)
+        # test the IP address was properly set
+        self.assertSequenceEqual(device_catchup.ip_address,
+                                 device_catchup_config_copy['ip_address'])
 
     @staticmethod
     def get_device_catchup(config, caller):
@@ -236,9 +238,9 @@ class DeviceCatchupTestCase(unittest.TestCase):
             # could not communicate with the mocked or real gateway device for
             # some reason, skip the test if we have an engine try to shut it
             # down
-            print("\nShutting down get_devicwe_catchup... ")
+            print("\nShutting down get_device_catchup... ")
             # now raise unittest.SkipTest to skip this test class
-            raise unittest.SkipTest("%s: Unable to connect to GW1000" % caller)
+            raise unittest.SkipTest("%s: Unable to connect to obtain EcowittDeviceCatchup object" % caller)
         else:
             return catchup_obj
 
@@ -1326,7 +1328,7 @@ class EcowittSensorsTestCase(unittest.TestCase):
         'all_sensor_data': {
             'wh45': {
                 'address': 39,
-                'id': 'FFFFFFFE',
+                'id': 'FFFFFFFF',
                 'battery': None,
                 'signal': 0,
                 'enabled': False,
@@ -1351,12 +1353,12 @@ class EcowittSensorsTestCase(unittest.TestCase):
                 }
             }
         },
-        'all_models_response' : ('wh45', 'wh41'),
-        'all_response': ('wh45', 'wh41_ch1', 'wh41_ch2'),
-        'enabled_response': ('wh45', 'wh41_ch1', 'wh41_ch2'),
-        'disabled_response': ('wh45', 'wh41_ch1', 'wh41_ch2'),
-        'learning_response': ('wh45', 'wh41_ch1', 'wh41_ch2'),
-        'connected_response': ('wh45', 'wh41_ch1', 'wh41_ch2')
+        'all_models_response' : ('wh41', 'wh45'),
+        'all_response': ('wh41_ch1', 'wh41_ch2', 'wh45'),
+        'enabled_response': ('wh41_ch1',),
+        'disabled_response': ('wh41_ch2', 'wh45'),
+        'learning_response': ('wh45',),
+        'connected_response': ('wh41_ch1',)
     }
 
 
@@ -1440,7 +1442,7 @@ class EcowittSensorsTestCase(unittest.TestCase):
 
         sensors = user.ecowitt_http.EcowittSensors()
         sensors.all_sensor_data = self.all_sensor_test_data['all_sensor_data']
-#         self.assertTupleEqual(sensors.all_models, self.all_sensor_test_data['all_models_response'])
+        self.assertTupleEqual(sensors.all_models, self.all_sensor_test_data['all_models_response'])
         self.assertTupleEqual(sensors.all, self.all_sensor_test_data['all_response'])
         self.assertTupleEqual(sensors.enabled, self.all_sensor_test_data['enabled_response'])
         self.assertTupleEqual(sensors.disabled, self.all_sensor_test_data['disabled_response'])
