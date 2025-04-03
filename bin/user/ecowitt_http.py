@@ -956,7 +956,7 @@ class HttpMapper(FieldMapper):
     """
 
     # modular observation map
-    obs_map = {
+    default_obs_map = {
         'inTemp': 'wh25.intemp',
         'inHumidity': 'wh25.inhumi',
         'pressure': 'wh25.abs',
@@ -1054,7 +1054,7 @@ class HttpMapper(FieldMapper):
         'heat4': 'ch_lds.4.heat',
     }
     # modular rain map
-    rain_map = {
+    default_rain_map = {
         't_rainevent': 'rain.0x0D.val',
         'rainRate': 'rain.0x0E.val',
         't_rainhour': 't_rainhour',
@@ -1074,14 +1074,14 @@ class HttpMapper(FieldMapper):
         'p_rain': 'p_rain'
     }
     # modular wind map
-    wind_map = {
+    default_wind_map = {
         'windDir': 'common_list.0x0A.val',
         'windSpeed': 'common_list.0x0B.val',
         'windGust': 'common_list.0x0C.val',
         'daymaxwind': 'common_list.0x19.val',
     }
     # modular sensor state map
-    sensor_state_map = {
+    default_sensor_state_map = {
         'wn32_batt': 'wh26.battery',
         'wn32_sig': 'wh26.signal',
         'wn31_ch1_batt': 'wn31.ch1.battery',
@@ -1181,10 +1181,10 @@ class HttpMapper(FieldMapper):
         'ws90_sig': 'ws90.signal'
     }
     # construct the default map based on the modular maps
-    default_map = (dict(obs_map))
-    default_map.update(rain_map)
-    default_map.update(wind_map)
-    default_map.update(sensor_state_map)
+    default_map = (dict(default_obs_map))
+    default_map.update(default_rain_map)
+    default_map.update(default_wind_map)
+    default_map.update(default_sensor_state_map)
 
     def __init__(self, driver_debug=None, default_map=None, **mapper_config):
         """Initialise an HttpMapper object."""
@@ -1213,6 +1213,10 @@ class HttpMapper(FieldMapper):
             _ = self.field_map.pop(datetime_key)
         # add the required mapping
         self.field_map['dateTime'] = 'datetime'
+        # construct the in-use rain_map
+        self.rain_map = {d: s for d,s in self.field_map.items() if s in self.default_rain_map.values()}
+        # construct the in-use wind_map
+        self.wind_map = {d: s for d,s in self.field_map.items() if s in self.default_wind_map.values()}
         # ensure all destination (WeeWX) fields are assigned a unit group
         self.assign_unit_groups()
         # log our field map if required
@@ -1589,8 +1593,7 @@ class EcowittCommon:
         self.piezo_rain_mapping_confirmed = False
         self.piezo_rain_total_field = None
 
-    @staticmethod
-    def log_rain_data(data, preamble=None):
+    def log_rain_data(self, data, preamble=None):
         """Log rain related data from the collector.
 
         General routine to obtain and log rain related data from a packet. The
@@ -1608,7 +1611,7 @@ class EcowittCommon:
         msg_list = []
         # iterate over our rain_map keys (the 'WeeWX' fields) and values (the
         # 'device' fields) we are interested in
-        for weewx_field, gw_field in HttpMapper.rain_map.items():
+        for weewx_field, gw_field in self.mapper.rain_map.items():
             # do we have a 'WeeWX' field of interest
             if weewx_field in data:
                 # we do so add some formatted output to our list
@@ -1625,8 +1628,7 @@ class EcowittCommon:
         else:
             log.info('%sno rain data found' % (label,))
 
-    @staticmethod
-    def log_wind_data(data, preamble=None):
+    def log_wind_data(self, data, preamble=None):
         """Log wind related data from the collector.
 
         General routine to obtain and log wind related data from a packet. The
@@ -1637,10 +1639,9 @@ class EcowittCommon:
         """
 
         msg_list = []
-        # iterate over our wind_field_map keys (the 'WeeWX' fields) and values
+        # iterate over our wind_map keys (the 'WeeWX' fields) and values
         # (the 'device' fields) we are interested in
-        # TODO. Fix this - wind_field_map
-        for weewx_field, gw_field in EcowittCommon.wind_field_map.items():
+        for weewx_field, gw_field in self.mapper.wind_map.items():
             # do we have a 'WeeWX' field of interest
             if weewx_field in data:
                 # we do so add some formatted output to our list
