@@ -5319,7 +5319,6 @@ class EcowittHttpParser:
     # and disabled)
     not_registered = ('fffffffe', 'ffffffff')
 
-    # TODO. Should unit_system have a default or not
     def __init__(self, unit_system=UNIT_SYSTEM,
                  show_battery=DEFAULT_FILTER_BATTERY,
                  log_unknown_fields=True,
@@ -9859,7 +9858,6 @@ class EcowittDevice:
     # tuple of lowercase sensor models known to have user updatable firmware
     sensors_with_firmware = ('ws80', 'ws85', 'ws90')
 
-    # TODO. Should unit_system have a default value?
     def __init__(self, ip_address,
                  unit_system=UNIT_SYSTEM,
                  max_tries=DEFAULT_MAX_TRIES,
@@ -11008,82 +11006,82 @@ class DirectEcowittDevice:
         upgrade_decode = ap_auto_decode  = afc_decode
         sensor_decode = {0: 'WH24',
                          1: 'WH65'}
-        # TODO. This seems dangerous
-        # get an EcowittDevice object
-        device = EcowittDevice(ip_address=self.ip_address,
-                               debug=self.driver_debug)
-        # identify the device being used
-        print()
-        try:
-            print(f'Interrogating {bcolors.BOLD}{device.model}{bcolors.ENDC} '
-                  f'at {bcolors.BOLD}{device.ip_address}{bcolors.ENDC}')
-            # get the device system parameters, wrap in a try..except to catch
-            # any exceptions
-            device_info = device.get_device_info_data()
-        except DeviceIOError as e:
+        # obtain an EcowittDevice object
+        device = self.get_device()
+        # if we have a device interrogate it and display the data
+        if device is not None:
+            # identify the device being used
             print()
-            print(f'Error obtaining a response from the device: {e}')
-        except ParseError as e:
-            print()
-            print(f'Error parsing device response: {e}')
-        except Exception as e:
-            raise
-        else:
-            afc = device_info.get('afc')
-            temp_comp = device_info.get('rad_comp')
-            tz_auto = device_info.get('tz_auto')
-            dst_status = device_info.get("dst")
-            upgrade = device_info.get('upgrade')
-            ap_auto = device_info.get('ap_auto')
-            # create a meaningful string for frequency representation
-            freq_str = freq_decode.get(device_info.get('rf_freq'), 'Unknown')
-            # If the sensor_type field is 0 there is a WH24 connected, if it's
-            # a 1 there is a WH65, if the sensor_type field is missing it's
-            # unknown
-            _type = device_info.get('sensor_type') if device_info.get('sensor_type') is not None else None
-            _type_str = sensor_decode.get(_type) if sensor_decode.get(_type) is not None else 'unknown'
-            # print the system parameters
-            print()
-            print(f'{"sensor type":>35}: {device_info.get("sensor_type")} ({_type_str})')
-            print(f'{"frequency":>35}: {device_info.get("rf_freq")} ({freq_str})')
-            if afc is not None:
-                print(f'{"automatic frequency control (AFC)":>35}: {afc} '
-                      f'({afc_decode.get(afc, "unknown")})')
+            try:
+                print(f'Interrogating {bcolors.BOLD}{device.model}{bcolors.ENDC} '
+                      f'at {bcolors.BOLD}{device.ip_address}{bcolors.ENDC}')
+                # get the device system parameters, wrap in a try..except to catch
+                # any exceptions
+                device_info = device.get_device_info_data()
+            except DeviceIOError as e:
+                print()
+                print(f'Error obtaining a response from the device: {e}')
+            except ParseError as e:
+                print()
+                print(f'Error parsing device response: {e}')
+            except Exception as e:
+                raise
             else:
-                print(f'{"automatic frequency control (AFC)":>35}: unavailable')
-            if temp_comp is not None:
-                print(f'{"temperature compensation":>35}: {temp_comp} '
-                      f'({temp_comp_decode.get(temp_comp, "unknown")})')
-            else:
-                print(f'{"temperature compensation":>35}: unavailable')
-            if tz_auto is not None:
-                print(f'{"auto timezone":>35}: {tz_auto} '
-                      f'({tz_auto_decode.get(tz_auto, "unknown")})')
-            else:
-                print(f'{"auto timezone":>35}: unavailable')
-            # do a little pre-processing of the tz name, sometimes the API
-            # provides a zero length string as the tz name
-            _tz_name = device_info.get("tz_name", "name not provided")
-            tz_name = _tz_name if len(_tz_name) > 0 else "name not provided"
-            print(f'{"timezone index":>35}: {device_info.get("tz_index")} ({tz_name})')
-            print(f'{"DST status":>35}: {dst_status} '
-                  f'({dst_decode.get(dst_status, "unknown")})')
-            # The HTTP API returns 'date' as a date-time string, but it is
-            # parsed to an epoch timestamp. Format the timestamp as a string.
-            date_time_str = time.strftime("%-d %B %Y %H:%M:%S",
-                                          time.localtime(device_info['date']))
-            print(f'{"date-time":>35}: {date_time_str}')
-            if upgrade is not None:
-                print(f'{"auto upgrade":>35}: {upgrade} '
-                      f'({upgrade_decode.get(upgrade, "unknown")})')
-            else:
-                print(f'{"auto upgrade":>35}: unavailable')
-            if ap_auto is not None:
-                print(f'{"device AP auto off":>35}: {ap_auto} '
-                      f'({ap_auto_decode.get(ap_auto, "unknown")})')
-            else:
-                print(f'{"device AP auto off":>35}: unavailable')
-            print(f'{"device AP SSID":>35}: {device_info.get("ap")}')
+                afc = device_info.get('afc')
+                temp_comp = device_info.get('rad_comp')
+                tz_auto = device_info.get('tz_auto')
+                dst_status = device_info.get("dst")
+                upgrade = device_info.get('upgrade')
+                ap_auto = device_info.get('ap_auto')
+                # create a meaningful string for frequency representation
+                freq_str = freq_decode.get(device_info.get('rf_freq'), 'Unknown')
+                # If the sensor_type field is 0 there is a WH24 connected, if it's
+                # a 1 there is a WH65, if the sensor_type field is missing it's
+                # unknown
+                _type = device_info.get('sensor_type') if device_info.get('sensor_type') is not None else None
+                _type_str = sensor_decode.get(_type) if sensor_decode.get(_type) is not None else 'unknown'
+                # print the system parameters
+                print()
+                print(f'{"sensor type":>35}: {device_info.get("sensor_type")} ({_type_str})')
+                print(f'{"frequency":>35}: {device_info.get("rf_freq")} ({freq_str})')
+                if afc is not None:
+                    print(f'{"automatic frequency control (AFC)":>35}: {afc} '
+                          f'({afc_decode.get(afc, "unknown")})')
+                else:
+                    print(f'{"automatic frequency control (AFC)":>35}: unavailable')
+                if temp_comp is not None:
+                    print(f'{"temperature compensation":>35}: {temp_comp} '
+                          f'({temp_comp_decode.get(temp_comp, "unknown")})')
+                else:
+                    print(f'{"temperature compensation":>35}: unavailable')
+                if tz_auto is not None:
+                    print(f'{"auto timezone":>35}: {tz_auto} '
+                          f'({tz_auto_decode.get(tz_auto, "unknown")})')
+                else:
+                    print(f'{"auto timezone":>35}: unavailable')
+                # do a little pre-processing of the tz name, sometimes the API
+                # provides a zero length string as the tz name
+                _tz_name = device_info.get("tz_name", "name not provided")
+                tz_name = _tz_name if len(_tz_name) > 0 else "name not provided"
+                print(f'{"timezone index":>35}: {device_info.get("tz_index")} ({tz_name})')
+                print(f'{"DST status":>35}: {dst_status} '
+                      f'({dst_decode.get(dst_status, "unknown")})')
+                # The HTTP API returns 'date' as a date-time string, but it is
+                # parsed to an epoch timestamp. Format the timestamp as a string.
+                date_time_str = time.strftime("%-d %B %Y %H:%M:%S",
+                                              time.localtime(device_info['date']))
+                print(f'{"date-time":>35}: {date_time_str}')
+                if upgrade is not None:
+                    print(f'{"auto upgrade":>35}: {upgrade} '
+                          f'({upgrade_decode.get(upgrade, "unknown")})')
+                else:
+                    print(f'{"auto upgrade":>35}: unavailable')
+                if ap_auto is not None:
+                    print(f'{"device AP auto off":>35}: {ap_auto} '
+                          f'({ap_auto_decode.get(ap_auto, "unknown")})')
+                else:
+                    print(f'{"device AP auto off":>35}: unavailable')
+                print(f'{"device AP SSID":>35}: {device_info.get("ap")}')
 
     def display_rain_totals(self):
         """Display the device rain gauge rain totals and rain settings.
@@ -11093,101 +11091,103 @@ class DirectEcowittDevice:
         'get_rain_totals' and 'get_piezo_rain' HTTP API commands.
         """
 
-        # wrap in a try..except in case there is an error
-        try:
-            # obtain an EcowittDevice object
-            device = EcowittDevice(ip_address=self.ip_address)
-            # identify the device being used
+        # obtain an EcowittDevice object
+        device = self.get_device()
+        # if we have a device interrogate it and display the data
+        if device is not None:
             print()
-            print(f'Interrogating {bcolors.BOLD}{device.model}{bcolors.ENDC} '
-                  f'at {bcolors.BOLD}{device.ip_address}{bcolors.ENDC}')
-            # get the rain totals data from the device
-            rain_totals_data = device.get_rain_totals()
-            # get the piezo rain data from the device
-            rain_piezo_data = device.get_piezo_rain_data()
-            # get the device units
-            device_units = device.get_device_units()
-        except weewx.ViolatedPrecondition as e:
-            print()
-            print(f'Unable to obtain EcowittDevice object: {e}')
-        except DeviceIOError as e:
-            print()
-            print(f'Unable to connect to device at {self.ip_address}: {e}')
-        except socket.timeout:
-            print()
-            print(f'Timeout. Device at {self.ip_address} did not respond.')
-        else:
-            # obtain a converter to do unit conversion, the unit system does
-            # not matter
-            c = weewx.units.StdUnitConverters[weewx.METRICWX]
-            # now get a formatter, the default string formats and labels will
-            # be fine
-            f = weewx.units.Formatter(unit_format_dict=weewx.defaults.defaults['Units']['StringFormats'],
-                                      unit_label_dict=weewx.defaults.defaults['Units']['Labels'])
-            # set the display units/labels based on the device units
-            gain_label = dict()
-            if device_units.get('rain') == 'inch':
-                units = ('inch', 'mm')
-                gain_label[1] = '(< 0.16 in/hr / < 4 mm/hr)'
-                gain_label[2] = '(< 0.39 in/hr / < 10 mm/hr)'
-                gain_label[3] = '(< 1.18 in/hr / < 30 mm/hr)'
-                gain_label[4] = '(< 2.36 in/hr / < 60 mm/hr)'
-                gain_label[5] = '(> 2.36 in/hr / > 60 mm/hr)'
+            # wrap in a try..except in case there is an error
+            try:
+                # identify the device being used
+                print(f'Interrogating {bcolors.BOLD}{device.model}{bcolors.ENDC} '
+                      f'at {bcolors.BOLD}{device.ip_address}{bcolors.ENDC}')
+                # get the rain totals data from the device
+                rain_totals_data = device.get_rain_totals()
+                # get the piezo rain data from the device
+                rain_piezo_data = device.get_piezo_rain_data()
+                # get the device units
+                device_units = device.get_device_units()
+            except weewx.ViolatedPrecondition as e:
+                print()
+                print(f'Unable to obtain EcowittDevice object: {e}')
+            except DeviceIOError as e:
+                print()
+                print(f'Unable to connect to device at {self.ip_address}: {e}')
+            except socket.timeout:
+                print()
+                print(f'Timeout. Device at {self.ip_address} did not respond.')
             else:
-                units = ('mm', 'inch')
-                gain_label[1] = '(< 4 mm/hr / < 0.16 in/hr)'
-                gain_label[2] = '(< 10 mm/hr / < 0.39 in/hr)'
-                gain_label[3] = '(< 30 mm/hr / < 1.18 in/hr)'
-                gain_label[4] = '(< 60 mm/hr / < 2.36 in/hr)'
-                gain_label[5] = '(> 60 mm/hr / > 2.36 in/hr)'
-            # get priority rainfall data gauge name
-            gauge_name = 'Unable to determine rainfall data priority'
-            for gauge in rain_totals_data['rain_list']:
-                if gauge['value'] == rain_totals_data['rain_priority']:
-                    gauge_name = gauge['gauge']
-            print()
-            print(f'Rainfall data priority: {gauge_name} ({rain_totals_data["rain_priority"]})')
-            print()
-            print(f'  Traditional gauge rain data:')
-            _vh = weewx.units.ValueHelper(rain_totals_data['day_rain'], formatter=f, converter=c)
-            print(f'{"Day rain":>15}: {_vh.convert(units[0]).toString()} ({_vh.convert(units[1]).toString()})')
-            _vh = weewx.units.ValueHelper(rain_totals_data['week_rain'], formatter=f, converter=c)
-            print(f'{"Week rain":>15}: {_vh.convert(units[0]).toString()} ({_vh.convert(units[1]).toString()})')
-            _vh = weewx.units.ValueHelper(rain_totals_data['month_rain'], formatter=f, converter=c)
-            print(f'{"Month rain":>15}: {_vh.convert(units[0]).toString()} ({_vh.convert(units[1]).toString()})')
-            _vh = weewx.units.ValueHelper(rain_totals_data['year_rain'], formatter=f, converter=c)
-            print(f'{"Year rain":>15}: {_vh.convert(units[0]).toString()} ({_vh.convert(units[1]).toString()})')
-            _data = rain_totals_data.get('rain_gain')
-            _data_str = f'{_data:.2f}' if _data is not None else '---'
-            print(f'{"Rain gain":>15}: {_data_str}')
-            print()
-            print(f'  Piezo gauge rain data:')
-            _vh = weewx.units.ValueHelper(rain_piezo_data['day_rain'], formatter=f, converter=c)
-            print(f'{"Day rain":>15}: {_vh.convert(units[0]).toString()} ({_vh.convert(units[1]).toString()})')
-            _vh = weewx.units.ValueHelper(rain_piezo_data['week_rain'], formatter=f, converter=c)
-            print(f'{"Week rain":>15}: {_vh.convert(units[0]).toString()} ({_vh.convert(units[1]).toString()})')
-            _vh = weewx.units.ValueHelper(rain_piezo_data['month_rain'], formatter=f, converter=c)
-            print(f'{"Month rain":>15}: {_vh.convert(units[0]).toString()} ({_vh.convert(units[1]).toString()})')
-            _vh = weewx.units.ValueHelper(rain_piezo_data['year_rain'], formatter=f, converter=c)
-            print(f'{"Year rain":>15}: {_vh.convert(units[0]).toString()} ({_vh.convert(units[1]).toString()})')
-            for gain_channel in range(5):
-                gain_field = f"gain{gain_channel + 1:d}"
-                _data = rain_piezo_data.get(gain_field)
-                _data_str = f'{_data:.2f} {gain_label[gain_channel + 1]}' if _data is not None \
-                    else f'-- {gain_label[gain_channel + 1]}'
-                _label_str = f'Rain{gain_channel + 1:d} gain'
-                print(f'{_label_str:>15}: {_data_str}')
-            print()
-            print(f'  Rainfall reset times:')
-            _data = rain_totals_data.get('rain_reset_day')
-            _data_str = f'{_data:02d}:00' if _data is not None else '-----'
-            print(f'{"Daily rainfall reset time":>30}: {_data_str}')
-            _data = rain_totals_data.get('rain_reset_week')
-            _data_str = f'{calendar.day_name[(_data + 6) % 7]}' if _data is not None else '-----'
-            print(f'{"Weekly rainfall reset":>30}: {_data_str}')
-            _data = rain_totals_data.get('rain_reset_year')
-            _data_str = f'{calendar.month_name[_data + 1]}' if _data is not None else '-----'
-            print(f'{"Annual rainfall reset":>30}: {_data_str}')
+                # obtain a converter to do unit conversion, the unit system does
+                # not matter
+                c = weewx.units.StdUnitConverters[weewx.METRICWX]
+                # now get a formatter, the default string formats and labels will
+                # be fine
+                f = weewx.units.Formatter(unit_format_dict=weewx.defaults.defaults['Units']['StringFormats'],
+                                          unit_label_dict=weewx.defaults.defaults['Units']['Labels'])
+                # set the display units/labels based on the device units
+                gain_label = dict()
+                if device_units.get('rain') == 'inch':
+                    units = ('inch', 'mm')
+                    gain_label[1] = '(< 0.16 in/hr / < 4 mm/hr)'
+                    gain_label[2] = '(< 0.39 in/hr / < 10 mm/hr)'
+                    gain_label[3] = '(< 1.18 in/hr / < 30 mm/hr)'
+                    gain_label[4] = '(< 2.36 in/hr / < 60 mm/hr)'
+                    gain_label[5] = '(> 2.36 in/hr / > 60 mm/hr)'
+                else:
+                    units = ('mm', 'inch')
+                    gain_label[1] = '(< 4 mm/hr / < 0.16 in/hr)'
+                    gain_label[2] = '(< 10 mm/hr / < 0.39 in/hr)'
+                    gain_label[3] = '(< 30 mm/hr / < 1.18 in/hr)'
+                    gain_label[4] = '(< 60 mm/hr / < 2.36 in/hr)'
+                    gain_label[5] = '(> 60 mm/hr / > 2.36 in/hr)'
+                # get priority rainfall data gauge name
+                gauge_name = 'Unable to determine rainfall data priority'
+                for gauge in rain_totals_data['rain_list']:
+                    if gauge['value'] == rain_totals_data['rain_priority']:
+                        gauge_name = gauge['gauge']
+                print()
+                print(f'Rainfall data priority: {gauge_name} ({rain_totals_data["rain_priority"]})')
+                print()
+                print(f'  Traditional gauge rain data:')
+                _vh = weewx.units.ValueHelper(rain_totals_data['day_rain'], formatter=f, converter=c)
+                print(f'{"Day rain":>15}: {_vh.convert(units[0]).toString()} ({_vh.convert(units[1]).toString()})')
+                _vh = weewx.units.ValueHelper(rain_totals_data['week_rain'], formatter=f, converter=c)
+                print(f'{"Week rain":>15}: {_vh.convert(units[0]).toString()} ({_vh.convert(units[1]).toString()})')
+                _vh = weewx.units.ValueHelper(rain_totals_data['month_rain'], formatter=f, converter=c)
+                print(f'{"Month rain":>15}: {_vh.convert(units[0]).toString()} ({_vh.convert(units[1]).toString()})')
+                _vh = weewx.units.ValueHelper(rain_totals_data['year_rain'], formatter=f, converter=c)
+                print(f'{"Year rain":>15}: {_vh.convert(units[0]).toString()} ({_vh.convert(units[1]).toString()})')
+                _data = rain_totals_data.get('rain_gain')
+                _data_str = f'{_data:.2f}' if _data is not None else '---'
+                print(f'{"Rain gain":>15}: {_data_str}')
+                print()
+                print(f'  Piezo gauge rain data:')
+                _vh = weewx.units.ValueHelper(rain_piezo_data['day_rain'], formatter=f, converter=c)
+                print(f'{"Day rain":>15}: {_vh.convert(units[0]).toString()} ({_vh.convert(units[1]).toString()})')
+                _vh = weewx.units.ValueHelper(rain_piezo_data['week_rain'], formatter=f, converter=c)
+                print(f'{"Week rain":>15}: {_vh.convert(units[0]).toString()} ({_vh.convert(units[1]).toString()})')
+                _vh = weewx.units.ValueHelper(rain_piezo_data['month_rain'], formatter=f, converter=c)
+                print(f'{"Month rain":>15}: {_vh.convert(units[0]).toString()} ({_vh.convert(units[1]).toString()})')
+                _vh = weewx.units.ValueHelper(rain_piezo_data['year_rain'], formatter=f, converter=c)
+                print(f'{"Year rain":>15}: {_vh.convert(units[0]).toString()} ({_vh.convert(units[1]).toString()})')
+                for gain_channel in range(5):
+                    gain_field = f"gain{gain_channel + 1:d}"
+                    _data = rain_piezo_data.get(gain_field)
+                    _data_str = f'{_data:.2f} {gain_label[gain_channel + 1]}' if _data is not None \
+                        else f'-- {gain_label[gain_channel + 1]}'
+                    _label_str = f'Rain{gain_channel + 1:d} gain'
+                    print(f'{_label_str:>15}: {_data_str}')
+                print()
+                print(f'  Rainfall reset times:')
+                _data = rain_totals_data.get('rain_reset_day')
+                _data_str = f'{_data:02d}:00' if _data is not None else '-----'
+                print(f'{"Daily rainfall reset time":>30}: {_data_str}')
+                _data = rain_totals_data.get('rain_reset_week')
+                _data_str = f'{calendar.day_name[(_data + 6) % 7]}' if _data is not None else '-----'
+                print(f'{"Weekly rainfall reset":>30}: {_data_str}')
+                _data = rain_totals_data.get('rain_reset_year')
+                _data_str = f'{calendar.month_name[_data + 1]}' if _data is not None else '-----'
+                print(f'{"Annual rainfall reset":>30}: {_data_str}')
 
     def display_mulch_offset(self):
         """Display device multichannel temperature and humidity offset data.
@@ -11196,296 +11196,32 @@ class DirectEcowittDevice:
         data from the selected device.
         """
 
-        # wrap in a try..except in case there is an error
-        try:
-            # obtain an EcowittDevice object
-            device = EcowittDevice(ip_address=self.ip_address)
-            # identify the device being used
+        # obtain an EcowittDevice object
+        device = self.get_device()
+        # if we have a device interrogate it and display the data
+        if device is not None:
             print()
-            print(f'Interrogating {bcolors.BOLD}{device.model}{bcolors.ENDC} '
-                  f'at {bcolors.BOLD}{device.ip_address}{bcolors.ENDC}')
-            # get the mulch offset data from the API
-            mulch_offset_data = device.get_multich_calibration_data()
-            # get the device units
-            device_units = device.get_device_units()
-        except weewx.ViolatedPrecondition as e:
-            print()
-            print(f'Unable to obtain EcowittDevice object: {e}')
-        except DeviceIOError as e:
-            print()
-            print(f'Unable to connect to device at {self.ip_address}: {e}')
-        except socket.timeout:
-            print()
-            print(f'Timeout. Device at {self.ip_address} did not respond.')
-        else:
-            # did we get any mulch offset data
-            if mulch_offset_data is not None:
-                # obtain a converter to do unit conversion, the unit system does
-                # not matter
-                c = weewx.units.StdUnitConverters[weewx.METRICWX]
-                # now get a formatter, the default string formats and labels will
-                # be fine
-                f = weewx.units.Formatter(unit_format_dict=weewx.defaults.defaults['Units']['StringFormats'],
-                                          unit_label_dict=weewx.defaults.defaults['Units']['Labels'])
-                # obtain the order of the units we will display for multi-unit
-                # offsets
-                if device_units['group_deltat'] == 'degree_F2':
-                    dt_units = ['degree_F2', 'degree_C2']
-                else:
-                    dt_units = ['degree_C2', 'degree_F2']
-                # now format and display the data
+            # wrap in a try..except in case there is an error
+            try:
+                # identify the device being used
+                print(f'Interrogating {bcolors.BOLD}{device.model}{bcolors.ENDC} '
+                      f'at {bcolors.BOLD}{device.ip_address}{bcolors.ENDC}')
+                # get the mulch offset data from the API
+                mulch_offset_data = device.get_multich_calibration_data()
+                # get the device units
+                device_units = device.get_device_units()
+            except weewx.ViolatedPrecondition as e:
                 print()
-                print('Multi-channel Temperature and Humidity Calibration')
-                # do we have any results to display?
-                if len(mulch_offset_data) > 0:
-                    # iterate over each channel for which we have data
-                    for sensor in mulch_offset_data:
-                        # print the channel and offset data
-                        channel_str = f'{"Channel":>11} {sensor["channel"]:d}'
-                        _vh = weewx.units.ValueHelper(sensor["temp"], formatter=f, converter=c)
-                        print(f'{channel_str:>13}: {"Temperature offset":>18}: '
-                              f'{_vh.convert(dt_units[0]).toString()} '
-                              f'({_vh.convert(dt_units[1]).toString()})')
-                        _vh = weewx.units.ValueHelper(sensor["humi"], formatter=f, converter=c)
-                        print(f'{"":>13}  {"Humidity offset":>18}: {_vh.toString()}')
-                else:
-                    # we have no results, so display a suitable message
-                    print(f'{"No Multi-channel temperature and humidity sensors found":>59}')
+                print(f'Unable to obtain EcowittDevice object: {e}')
+            except DeviceIOError as e:
+                print()
+                print(f'Unable to connect to device at {self.ip_address}: {e}')
+            except socket.timeout:
+                print()
+                print(f'Timeout. Device at {self.ip_address} did not respond.')
             else:
-                print()
-                print(f'Device at {self.ip_address} did not respond.')
-
-    def display_mulch_t_offset(self):
-        """Display device multichannel temperature (WN34) offset data.
-
-        Obtain and display the multichannel temperature (WN34) offset data from
-        the selected device.
-        """
-
-        # wrap in a try..except in case there is an error
-        try:
-            # obtain an EcowittDevice object
-            device = EcowittDevice(ip_address=self.ip_address)
-            # identify the device being used
-            print()
-            print(f'Interrogating {bcolors.BOLD}{device.model}{bcolors.ENDC} '
-                  f'at {bcolors.BOLD}{device.ip_address}{bcolors.ENDC}')
-            # get the mulch temp offset data via the API
-            wn34_offset_data = device.get_wn34_offset_data()
-            # get the device units
-            device_units = device.get_device_units()
-        except weewx.ViolatedPrecondition as e:
-            print()
-            print(f'Unable to obtain EcowittDevice object: {e}')
-        except DeviceIOError as e:
-            print()
-            print(f'Unable to connect to device at {self.ip_address}: {e}')
-        except socket.timeout:
-            print()
-            print(f'Timeout. Device at {self.ip_address} did not respond.')
-        else:
-            # did we get any mulch temp offset data
-            if wn34_offset_data is not None:
-                # obtain a converter to do unit conversion, the unit system does
-                # not matter
-                c = weewx.units.StdUnitConverters[weewx.METRICWX]
-                # now get a formatter, the default string formats and labels will
-                # be fine
-                f = weewx.units.Formatter(unit_format_dict=weewx.defaults.defaults['Units']['StringFormats'],
-                                          unit_label_dict=weewx.defaults.defaults['Units']['Labels'])
-                # obtain the order of the units we will display for multi-unit
-                # offsets
-                if device_units['group_deltat'] == 'degree_F2':
-                    dt_units = ['degree_F2', 'degree_C2']
-                else:
-                    dt_units = ['degree_C2', 'degree_F2']
-                print()
-                print('Multi-channel Temperature Calibration')
-                # do we have any results to display?
-                if len(wn34_offset_data) > 0:
-                    # we have results, now format and display the data
-                    # iterate over each channel for which we have data
-                    for sensor in wn34_offset_data:
-                        # Print the channel and offset data. The API returns
-                        # channels starting at 0x63, but the WSView Plus app
-                        # displays channels starting at 1, so subtract 0x62
-                        # (or 98) from our channel number
-                        channel_str = f'{"Channel":>11} {sensor["channel"]:d}'
-                        _vh = weewx.units.ValueHelper(sensor['temp'], formatter=f, converter=c)
-                        print(f'{channel_str:>13}: {"Temperature offset":>18}: '
-                              f'{_vh.convert(dt_units[0]).toString()} '
-                              f'({_vh.convert(dt_units[1]).toString()})')
-                else:
-                    # we have no results, so display a suitable message
-                    print(f'{"No Multi-channel temperature sensors found":>46}')
-                print()
-            else:
-                print()
-                print(f'Device at {self.ip_address} did not respond.')
-                print()
-
-    def display_pm25_offset(self):
-        """Display the device PM2.5 offset data.
-
-        Obtain and display the PM2.5 offset data from the selected device.
-        """
-
-        # wrap in a try..except in case there is an error
-        try:
-            # obtain an EcowittDevice object
-            device = EcowittDevice(ip_address=self.ip_address)
-            # identify the device being used
-            print()
-            print(f'Interrogating {bcolors.BOLD}{device.model}{bcolors.ENDC} '
-                  f'at {bcolors.BOLD}{device.ip_address}{bcolors.ENDC}')
-            # get the PM2.5 offset data from the API
-            pm25_offset_data = device.get_pm25_offset_data()
-        except weewx.ViolatedPrecondition as e:
-            print()
-            print(f'Unable to obtain EcowittDevice object: {e}')
-        except DeviceIOError as e:
-            print()
-            print(f'Unable to connect to device at {self.ip_address}: {e}')
-        except socket.timeout:
-            print()
-            print(f'Timeout. Device at {self.ip_address} did not respond.')
-        else:
-            # did we get any PM2.5 offset data
-            if pm25_offset_data is not None:
-                # obtain a converter to do unit conversion, the unit system does
-                # not matter
-                c = weewx.units.StdUnitConverters[weewx.METRICWX]
-                # now get a formatter, the default string formats and labels will
-                # be fine
-                f = weewx.units.Formatter(unit_format_dict=weewx.defaults.defaults['Units']['StringFormats'],
-                                          unit_label_dict=weewx.defaults.defaults['Units']['Labels'])
-                # do we have any results to display?
-                if len(pm25_offset_data) > 0:
-                    # now format and display the data
-                    print()
-                    print('PM2.5 Calibration')
-                    # iterate over each channel for which we have data
-                    for sensor in pm25_offset_data:
-                        # print the channel and offset data
-                        channel_str = f'{"Channel":>11} {sensor["channel"]:d}'
-                        _vh = weewx.units.ValueHelper(sensor['val'], formatter=f, converter=c)
-                        print(f'{channel_str:>13}: {"PM2.5 offset":>15}: '
-                              f'{_vh.toString()}')
-                else:
-                    # we have no results, so display a suitable message
-                    print(f'{"No PM2.5 sensors found":>26}')
-                print()
-            else:
-                print()
-                print(f'Device at {self.ip_address} did not respond.')
-                print()
-
-    def display_co2_offset(self):
-        """Display the device WH45 CO2, PM10 and PM2.5 offset data.
-
-        Obtain and display the WH45 CO2, PM10 and PM2.5 offset data from the
-        selected device.
-        """
-
-        # wrap in a try..except in case there is an error
-        try:
-            # obtain an EcowittDevice object
-            device = EcowittDevice(ip_address=self.ip_address)
-            # identify the device being used
-            print()
-            print(f'Interrogating {bcolors.BOLD}{device.model}{bcolors.ENDC} '
-                  f'at {bcolors.BOLD}{device.ip_address}{bcolors.ENDC}')
-            # get the offset data from the API
-            co2_offset_data = device.get_co2_offset_data()
-        except weewx.ViolatedPrecondition as e:
-            print()
-            print(f'Unable to obtain EcowittDevice object: {e}')
-        except DeviceIOError as e:
-            print()
-            print(f'Unable to connect to device at {self.ip_address}: {e}')
-        except socket.timeout:
-            print()
-            print(f'Timeout. Device at {self.ip_address} did not respond.')
-        else:
-            # did we get any offset data
-            if co2_offset_data is not None:
-                # obtain a converter to do unit conversion, the unit system does
-                # not matter
-                c = weewx.units.StdUnitConverters[weewx.METRICWX]
-                # Now get a formatter, we could use the default formatter, but
-                # we need microgram_per_meter_cubed formatted with one decimal
-                # places. So create a custom formatter using a modified
-                # defaults StringFormats stanza and the defaults Labels stanza.
-                # obtain a copy of the defaults StringFormats stanza
-                unit_format_dict = dict(weewx.defaults.defaults['Units']['StringFormats'])
-                # modify the 'microgram_per_meter_cubed' format
-                unit_format_dict['microgram_per_meter_cubed'] = '%.1f'
-                # now get the formatter
-                f = weewx.units.Formatter(unit_format_dict=unit_format_dict,
-                                          unit_label_dict=weewx.defaults.defaults['Units']['Labels'])
-                # now format and display the data
-                print()
-                print('CO2 Calibration')
-                _vh = weewx.units.ValueHelper(co2_offset_data['co2'],
-                                              formatter=f,
-                                              converter=c)
-                print(f'{"CO2 offset":>16}: {_vh.toString()}')
-                if co2_offset_data.get("pm1") is not None:
-                    _vh = weewx.units.ValueHelper(co2_offset_data['pm1'],
-                                                  formatter=f,
-                                                  converter=c)
-                    print(f'{"PM1 offset":>16}: {_vh.toString()}')
-                _vh = weewx.units.ValueHelper(co2_offset_data['pm25'],
-                                              formatter=f,
-                                              converter=c)
-                print(f'{"PM2.5 offset":>16}: {_vh.toString()}')
-                if co2_offset_data.get("pm4") is not None:
-                    _vh = weewx.units.ValueHelper(co2_offset_data['pm4'],
-                                                  formatter=f,
-                                                  converter=c)
-                    print(f'{"PM4 offset":>16}: {_vh.toString()}')
-                _vh = weewx.units.ValueHelper(co2_offset_data['pm10'],
-                                              formatter=f,
-                                              converter=c)
-                print(f'{"PM10 offset":>16}: {_vh.toString()}')
-            else:
-                print()
-                print(f'Device at {self.ip_address} did not respond.')
-            print()
-
-    def display_lds_offset(self):
-        """Display the device WH54 LDS offset data.
-
-        Obtain and display the WH54 LDS offset and calibration data from the
-        selected device.
-        """
-
-        # wrap in a try..except in case there is an error
-        try:
-            # obtain an EcowittDevice object
-            device = EcowittDevice(ip_address=self.ip_address)
-            # identify the device being used
-            print()
-            print(f'Interrogating {bcolors.BOLD}{device.model}{bcolors.ENDC} '
-                  f'at {bcolors.BOLD}{device.ip_address}{bcolors.ENDC}')
-            # get the offset data from the API
-            lds_offset_data = device.get_lds_offset_data()
-            # get the device units
-            device_units = device.get_device_units()
-        except weewx.ViolatedPrecondition as e:
-            print()
-            print(f'Unable to obtain EcowittDevice object: {e}')
-        except DeviceIOError as e:
-            print()
-            print(f'Unable to connect to device at {self.ip_address}: {e}')
-        except socket.timeout:
-            print()
-            print(f'Timeout. Device at {self.ip_address} did not respond.')
-        else:
-            # did we get any offset data
-            if lds_offset_data is not None:
-                # do we have any results to display?
-                if len(lds_offset_data) > 0:
+                # did we get any mulch offset data
+                if mulch_offset_data is not None:
                     # obtain a converter to do unit conversion, the unit system does
                     # not matter
                     c = weewx.units.StdUnitConverters[weewx.METRICWX]
@@ -11495,40 +11231,314 @@ class DirectEcowittDevice:
                                               unit_label_dict=weewx.defaults.defaults['Units']['Labels'])
                     # obtain the order of the units we will display for multi-unit
                     # offsets
-                    if device_units['group_depth'] == 'foot2':
-                        units = ['foot2', 'mm2']
+                    if device_units['group_deltat'] == 'degree_F2':
+                        dt_units = ['degree_F2', 'degree_C2']
                     else:
-                        units = ['mm2', 'foot2']
+                        dt_units = ['degree_C2', 'degree_F2']
+                    # now format and display the data
                     print()
-                    print('LDS Calibration')
-                    # iterate over each channel printing the channel data
-                    for sensor in lds_offset_data:
-                        _name = sensor.get("name")
-                        if _name is not None and len(_name) > 0:
-                            _name_str = f' ({_name})'
-                        else:
-                            _name_str = ''
-                        print(f'    Channel {sensor["channel"]:d}{_name_str}')
-                        _vh = weewx.units.ValueHelper(sensor['offset'],
-                                                      formatter=f,
-                                                      converter=c)
-                        print(f'{"Offset":>15}: {_vh.convert(units[0]).toString()} '
-                              f'({_vh.convert(units[1]).toString()})')
-                        _vh = weewx.units.ValueHelper(sensor['total_height'],
-                                                      formatter=f,
-                                                      converter=c)
-                        print(f'{"Height":>15}: {_vh.convert(units[0]).toString()} '
-                              f'({_vh.convert(units[1]).toString()})')
-                        print(f'{"Heat":>15}: {sensor["total_heat"]:d}')
-                        print(f'{"Level":>15}: {sensor["level"]:d}')
+                    print('Multi-channel Temperature and Humidity Calibration')
+                    # do we have any results to display?
+                    if len(mulch_offset_data) > 0:
+                        # iterate over each channel for which we have data
+                        for sensor in mulch_offset_data:
+                            # print the channel and offset data
+                            channel_str = f'{"Channel":>11} {sensor["channel"]:d}'
+                            _vh = weewx.units.ValueHelper(sensor["temp"], formatter=f, converter=c)
+                            print(f'{channel_str:>13}: {"Temperature offset":>18}: '
+                                  f'{_vh.convert(dt_units[0]).toString()} '
+                                  f'({_vh.convert(dt_units[1]).toString()})')
+                            _vh = weewx.units.ValueHelper(sensor["humi"], formatter=f, converter=c)
+                            print(f'{"":>13}  {"Humidity offset":>18}: {_vh.toString()}')
+                    else:
+                        # we have no results, so display a suitable message
+                        print(f'{"No Multi-channel temperature and humidity sensors found":>59}')
                 else:
-                    # we have no results, so display a suitable message
-                    print(f'{"No LDS sensors found":>26}')
-                print()
-            else:
-                print()
-                print(f'Device at {self.ip_address} did not respond.')
+                    print()
+                    print(f'Device at {self.ip_address} did not respond.')
+
+    def display_mulch_t_offset(self):
+        """Display device multichannel temperature (WN34) offset data.
+
+        Obtain and display the multichannel temperature (WN34) offset data from
+        the selected device.
+        """
+
+        # obtain an EcowittDevice object
+        device = self.get_device()
+        # if we have a device interrogate it and display the data
+        if device is not None:
             print()
+            # wrap in a try..except in case there is an error
+            try:
+                # identify the device being used
+                print(f'Interrogating {bcolors.BOLD}{device.model}{bcolors.ENDC} '
+                      f'at {bcolors.BOLD}{device.ip_address}{bcolors.ENDC}')
+                # get the mulch temp offset data via the API
+                wn34_offset_data = device.get_wn34_offset_data()
+                # get the device units
+                device_units = device.get_device_units()
+            except weewx.ViolatedPrecondition as e:
+                print()
+                print(f'Unable to obtain EcowittDevice object: {e}')
+            except DeviceIOError as e:
+                print()
+                print(f'Unable to connect to device at {self.ip_address}: {e}')
+            except socket.timeout:
+                print()
+                print(f'Timeout. Device at {self.ip_address} did not respond.')
+            else:
+                # did we get any mulch temp offset data
+                if wn34_offset_data is not None:
+                    # obtain a converter to do unit conversion, the unit system does
+                    # not matter
+                    c = weewx.units.StdUnitConverters[weewx.METRICWX]
+                    # now get a formatter, the default string formats and labels will
+                    # be fine
+                    f = weewx.units.Formatter(unit_format_dict=weewx.defaults.defaults['Units']['StringFormats'],
+                                              unit_label_dict=weewx.defaults.defaults['Units']['Labels'])
+                    # obtain the order of the units we will display for multi-unit
+                    # offsets
+                    if device_units['group_deltat'] == 'degree_F2':
+                        dt_units = ['degree_F2', 'degree_C2']
+                    else:
+                        dt_units = ['degree_C2', 'degree_F2']
+                    print()
+                    print('Multi-channel Temperature Calibration')
+                    # do we have any results to display?
+                    if len(wn34_offset_data) > 0:
+                        # we have results, now format and display the data
+                        # iterate over each channel for which we have data
+                        for sensor in wn34_offset_data:
+                            # Print the channel and offset data. The API returns
+                            # channels starting at 0x63, but the WSView Plus app
+                            # displays channels starting at 1, so subtract 0x62
+                            # (or 98) from our channel number
+                            channel_str = f'{"Channel":>11} {sensor["channel"]:d}'
+                            _vh = weewx.units.ValueHelper(sensor['temp'], formatter=f, converter=c)
+                            print(f'{channel_str:>13}: {"Temperature offset":>18}: '
+                                  f'{_vh.convert(dt_units[0]).toString()} '
+                                  f'({_vh.convert(dt_units[1]).toString()})')
+                    else:
+                        # we have no results, so display a suitable message
+                        print(f'{"No Multi-channel temperature sensors found":>46}')
+                    print()
+                else:
+                    print()
+                    print(f'Device at {self.ip_address} did not respond.')
+                    print()
+
+    def display_pm25_offset(self):
+        """Display the device PM2.5 offset data.
+
+        Obtain and display the PM2.5 offset data from the selected device.
+        """
+
+        # obtain an EcowittDevice object
+        device = self.get_device()
+        # if we have a device interrogate it and display the data
+        if device is not None:
+            print()
+            # wrap in a try..except in case there is an error
+            try:
+                # identify the device being used
+                print(f'Interrogating {bcolors.BOLD}{device.model}{bcolors.ENDC} '
+                      f'at {bcolors.BOLD}{device.ip_address}{bcolors.ENDC}')
+                # get the PM2.5 offset data from the API
+                pm25_offset_data = device.get_pm25_offset_data()
+            except weewx.ViolatedPrecondition as e:
+                print()
+                print(f'Unable to obtain EcowittDevice object: {e}')
+            except DeviceIOError as e:
+                print()
+                print(f'Unable to connect to device at {self.ip_address}: {e}')
+            except socket.timeout:
+                print()
+                print(f'Timeout. Device at {self.ip_address} did not respond.')
+            else:
+                # did we get any PM2.5 offset data
+                if pm25_offset_data is not None:
+                    # obtain a converter to do unit conversion, the unit system does
+                    # not matter
+                    c = weewx.units.StdUnitConverters[weewx.METRICWX]
+                    # now get a formatter, the default string formats and labels will
+                    # be fine
+                    f = weewx.units.Formatter(unit_format_dict=weewx.defaults.defaults['Units']['StringFormats'],
+                                              unit_label_dict=weewx.defaults.defaults['Units']['Labels'])
+                    # do we have any results to display?
+                    if len(pm25_offset_data) > 0:
+                        # now format and display the data
+                        print()
+                        print('PM2.5 Calibration')
+                        # iterate over each channel for which we have data
+                        for sensor in pm25_offset_data:
+                            # print the channel and offset data
+                            channel_str = f'{"Channel":>11} {sensor["channel"]:d}'
+                            _vh = weewx.units.ValueHelper(sensor['val'], formatter=f, converter=c)
+                            print(f'{channel_str:>13}: {"PM2.5 offset":>15}: '
+                                  f'{_vh.toString()}')
+                    else:
+                        # we have no results, so display a suitable message
+                        print(f'{"No PM2.5 sensors found":>26}')
+                    print()
+                else:
+                    print()
+                    print(f'Device at {self.ip_address} did not respond.')
+                    print()
+
+    def display_co2_offset(self):
+        """Display the device WH45 CO2, PM10 and PM2.5 offset data.
+
+        Obtain and display the WH45 CO2, PM10 and PM2.5 offset data from the
+        selected device.
+        """
+
+        # obtain an EcowittDevice object
+        device = self.get_device()
+        # if we have a device interrogate it and display the data
+        if device is not None:
+            print()
+            # wrap in a try..except in case there is an error
+            try:
+                # identify the device being used
+                print(f'Interrogating {bcolors.BOLD}{device.model}{bcolors.ENDC} '
+                      f'at {bcolors.BOLD}{device.ip_address}{bcolors.ENDC}')
+                # get the offset data from the API
+                co2_offset_data = device.get_co2_offset_data()
+            except weewx.ViolatedPrecondition as e:
+                print()
+                print(f'Unable to obtain EcowittDevice object: {e}')
+            except DeviceIOError as e:
+                print()
+                print(f'Unable to connect to device at {self.ip_address}: {e}')
+            except socket.timeout:
+                print()
+                print(f'Timeout. Device at {self.ip_address} did not respond.')
+            else:
+                # did we get any offset data
+                if co2_offset_data is not None:
+                    # obtain a converter to do unit conversion, the unit system does
+                    # not matter
+                    c = weewx.units.StdUnitConverters[weewx.METRICWX]
+                    # Now get a formatter, we could use the default formatter, but
+                    # we need microgram_per_meter_cubed formatted with one decimal
+                    # places. So create a custom formatter using a modified
+                    # defaults StringFormats stanza and the defaults Labels stanza.
+                    # obtain a copy of the defaults StringFormats stanza
+                    unit_format_dict = dict(weewx.defaults.defaults['Units']['StringFormats'])
+                    # modify the 'microgram_per_meter_cubed' format
+                    unit_format_dict['microgram_per_meter_cubed'] = '%.1f'
+                    # now get the formatter
+                    f = weewx.units.Formatter(unit_format_dict=unit_format_dict,
+                                              unit_label_dict=weewx.defaults.defaults['Units']['Labels'])
+                    # now format and display the data
+                    print()
+                    print('CO2 Calibration')
+                    _vh = weewx.units.ValueHelper(co2_offset_data['co2'],
+                                                  formatter=f,
+                                                  converter=c)
+                    print(f'{"CO2 offset":>16}: {_vh.toString()}')
+                    if co2_offset_data.get("pm1") is not None:
+                        _vh = weewx.units.ValueHelper(co2_offset_data['pm1'],
+                                                      formatter=f,
+                                                      converter=c)
+                        print(f'{"PM1 offset":>16}: {_vh.toString()}')
+                    _vh = weewx.units.ValueHelper(co2_offset_data['pm25'],
+                                                  formatter=f,
+                                                  converter=c)
+                    print(f'{"PM2.5 offset":>16}: {_vh.toString()}')
+                    if co2_offset_data.get("pm4") is not None:
+                        _vh = weewx.units.ValueHelper(co2_offset_data['pm4'],
+                                                      formatter=f,
+                                                      converter=c)
+                        print(f'{"PM4 offset":>16}: {_vh.toString()}')
+                    _vh = weewx.units.ValueHelper(co2_offset_data['pm10'],
+                                                  formatter=f,
+                                                  converter=c)
+                    print(f'{"PM10 offset":>16}: {_vh.toString()}')
+                else:
+                    print()
+                    print(f'Device at {self.ip_address} did not respond.')
+                print()
+
+    def display_lds_offset(self):
+        """Display the device WH54 LDS offset data.
+
+        Obtain and display the WH54 LDS offset and calibration data from the
+        selected device.
+        """
+
+        # obtain an EcowittDevice object
+        device = self.get_device()
+        # if we have a device interrogate it and display the data
+        if device is not None:
+            print()
+            # wrap in a try..except in case there is an error
+            try:
+                # identify the device being used
+                print(f'Interrogating {bcolors.BOLD}{device.model}{bcolors.ENDC} '
+                      f'at {bcolors.BOLD}{device.ip_address}{bcolors.ENDC}')
+                # get the offset data from the API
+                lds_offset_data = device.get_lds_offset_data()
+                # get the device units
+                device_units = device.get_device_units()
+            except weewx.ViolatedPrecondition as e:
+                print()
+                print(f'Unable to obtain EcowittDevice object: {e}')
+            except DeviceIOError as e:
+                print()
+                print(f'Unable to connect to device at {self.ip_address}: {e}')
+            except socket.timeout:
+                print()
+                print(f'Timeout. Device at {self.ip_address} did not respond.')
+            else:
+                # did we get any offset data
+                if lds_offset_data is not None:
+                    # do we have any results to display?
+                    if len(lds_offset_data) > 0:
+                        # obtain a converter to do unit conversion, the unit system does
+                        # not matter
+                        c = weewx.units.StdUnitConverters[weewx.METRICWX]
+                        # now get a formatter, the default string formats and labels will
+                        # be fine
+                        f = weewx.units.Formatter(unit_format_dict=weewx.defaults.defaults['Units']['StringFormats'],
+                                                  unit_label_dict=weewx.defaults.defaults['Units']['Labels'])
+                        # obtain the order of the units we will display for multi-unit
+                        # offsets
+                        if device_units['group_depth'] == 'foot2':
+                            units = ['foot2', 'mm2']
+                        else:
+                            units = ['mm2', 'foot2']
+                        print()
+                        print('LDS Calibration')
+                        # iterate over each channel printing the channel data
+                        for sensor in lds_offset_data:
+                            _name = sensor.get("name")
+                            if _name is not None and len(_name) > 0:
+                                _name_str = f' ({_name})'
+                            else:
+                                _name_str = ''
+                            print(f'    Channel {sensor["channel"]:d}{_name_str}')
+                            _vh = weewx.units.ValueHelper(sensor['offset'],
+                                                          formatter=f,
+                                                          converter=c)
+                            print(f'{"Offset":>15}: {_vh.convert(units[0]).toString()} '
+                                  f'({_vh.convert(units[1]).toString()})')
+                            _vh = weewx.units.ValueHelper(sensor['total_height'],
+                                                          formatter=f,
+                                                          converter=c)
+                            print(f'{"Height":>15}: {_vh.convert(units[0]).toString()} '
+                                  f'({_vh.convert(units[1]).toString()})')
+                            print(f'{"Heat":>15}: {sensor["total_heat"]:d}')
+                            print(f'{"Level":>15}: {sensor["level"]:d}')
+                    else:
+                        # we have no results, so display a suitable message
+                        print(f'{"No LDS sensors found":>26}')
+                    print()
+                else:
+                    print()
+                    print(f'Device at {self.ip_address} did not respond.')
+                print()
 
     def display_calibration(self):
         """Display the device calibration data.
@@ -11536,109 +11546,111 @@ class DirectEcowittDevice:
         Obtain and display the calibration data from the selected device.
         """
 
-        # wrap in a try..except in case there is an error
-        try:
-            # obtain an EcowittDevice object
-            device = EcowittDevice(ip_address=self.ip_address)
-            # identify the device being used
+        # obtain an EcowittDevice object
+        device = self.get_device()
+        # if we have a device interrogate it and display the data
+        if device is not None:
             print()
-            print(f'Interrogating {bcolors.BOLD}{device.model}{bcolors.ENDC} '
-                  f'at {bcolors.BOLD}{device.ip_address}{bcolors.ENDC}')
-            # get the calibration data from the collector object's calibration
-            # property
-            calibration_data = device.get_calibration_data()
-            # get the device units
-            device_units = device.get_device_units()
-        except weewx.ViolatedPrecondition as e:
-            print()
-            print(f'Unable to obtain EcowittDevice object: {e}')
-        except DeviceIOError as e:
-            print()
-            print(f'Unable to connect to device at {self.ip_address}: {e}')
-        except socket.timeout:
-            print()
-            print(f'Timeout. Device at {self.ip_address} did not respond.')
-        else:
-            # did we get any calibration data
-            if calibration_data is not None:
-                # obtain a converter to do unit conversion, the unit system does
-                # not matter
-                c = weewx.units.StdUnitConverters[weewx.METRICWX]
-                # now get a formatter, the default string formats and labels will
-                # be fine
-                f = weewx.units.Formatter(unit_format_dict=weewx.defaults.defaults['Units']['StringFormats'],
-                                          unit_label_dict=weewx.defaults.defaults['Units']['Labels'])
-                # obtain the order of the units we will display for multi-unit
-                # offsets
-                if device_units['group_deltat'] == 'degree_F2':
-                    dt_units = ['degree_F2', 'degree_C2']
-                else:
-                    dt_units = ['degree_C2', 'degree_F2']
-                if device_units['group_pressure'] == 'mmHg':
-                    p_units = ['mmHg', 'hPa', 'inHg']
-                elif device_units['group_pressure'] == 'inHg':
-                    p_units = ['inHg', 'hPa', 'mmHg']
-                else:
-                    p_units = ['hPa', 'inHg', 'mmHg']
-                if device_units['group_altitude'] == 'foot':
-                    a_units = ['foot', 'meter']
-                else:
-                    a_units = ['meter', 'foot']
-                # now format and display the data
+            # wrap in a try..except in case there is an error
+            try:
+                # identify the device being used
+                print(f'Interrogating {bcolors.BOLD}{device.model}{bcolors.ENDC} '
+                      f'at {bcolors.BOLD}{device.ip_address}{bcolors.ENDC}')
+                # get the calibration data from the collector object's calibration
+                # property
+                calibration_data = device.get_calibration_data()
+                # get the device units
+                device_units = device.get_device_units()
+            except weewx.ViolatedPrecondition as e:
                 print()
-                print('Calibration')
-                print(f'{"Irradiance gain":>26}: {calibration_data["solar_gain"]:.2f}')
-                print(f'{"UV gain":>26}: {calibration_data["uv_gain"]:.2f}')
-                print(f'{"Wind gain":>26}: {calibration_data["wind_gain"]:.2f}')
-                _vh = weewx.units.ValueHelper(calibration_data["intemp_offset"],
-                                              formatter=f,
-                                              converter=c)
-                print(f'{"Inside temperature offset":>26}: {_vh.convert(dt_units[0]).toString()} '
-                      f'({_vh.convert(dt_units[1]).toString()})')
-                _vh = weewx.units.ValueHelper(calibration_data["inhumid_offset"],
-                                              formatter=f,
-                                              converter=c)
-                print(f'{"Inside temperature offset":>26}: {_vh.toString()}')
-                _vh = weewx.units.ValueHelper(calibration_data["outtemp_offset"],
-                                              formatter=f,
-                                              converter=c)
-                print(f'{"Outside temperature offset":>26}: {_vh.convert(dt_units[0]).toString()} '
-                      f'({_vh.convert(dt_units[1]).toString()})')
-                _vh = weewx.units.ValueHelper(calibration_data["outhumid_offset"],
-                                              formatter=f,
-                                              converter=c)
-                print(f'{"Outside temperature offset":>26}: {_vh.toString()}')
-                _vh = weewx.units.ValueHelper(calibration_data["abs_offset"],
-                                              formatter=f,
-                                              converter=c)
-                print(f'{"Absolute pressure offset":>26}: {_vh.convert(p_units[0]).toString()} '
-                      f'({_vh.convert(p_units[1]).toString()}/{_vh.convert(p_units[2]).toString()})')
-                # older firmware uses a simple relative pressure calibration
-                # procedure that uses a fixed offset, check if we have a fixed
-                # offset in key value 'rel_offset'
-                if 'rel_offset' in calibration_data:
-                    _vh = weewx.units.ValueHelper(calibration_data["rel_offset"],
-                                                  formatter=f,
-                                                  converter=c)
-                    print(f'{"Relative pressure offset":>26}: {_vh.convert(p_units[0]).toString()} '
-                          f'({_vh.convert(p_units[1]).toString()}/{_vh.convert(p_units[2]).toString()})')
-                # newer firmware (eg GW3000 v1.0.5 and later) uses an altitude
-                # based pressure calibration procedure that uses an altitude,
-                # check if we have an 'altitude' key value
-                if 'altitude' in calibration_data:
-                    _vh = weewx.units.ValueHelper(calibration_data["altitude"],
-                                                  formatter=f,
-                                                  converter=c)
-                    print(f'{"Altitude for REL":>26}: {_vh.convert(a_units[0]).toString()} '
-                          f'({_vh.convert(a_units[1]).toString()})')
-                _vh = weewx.units.ValueHelper(calibration_data["winddir_offset"],
-                                              formatter=f,
-                                              converter=c)
-                print(f'{"Wind direction offset":>26}: {_vh.toString(useThisFormat="%d")}')
+                print(f'Unable to obtain EcowittDevice object: {e}')
+            except DeviceIOError as e:
+                print()
+                print(f'Unable to connect to device at {self.ip_address}: {e}')
+            except socket.timeout:
+                print()
+                print(f'Timeout. Device at {self.ip_address} did not respond.')
             else:
+                # did we get any calibration data
+                if calibration_data is not None:
+                    # obtain a converter to do unit conversion, the unit system does
+                    # not matter
+                    c = weewx.units.StdUnitConverters[weewx.METRICWX]
+                    # now get a formatter, the default string formats and labels will
+                    # be fine
+                    f = weewx.units.Formatter(unit_format_dict=weewx.defaults.defaults['Units']['StringFormats'],
+                                              unit_label_dict=weewx.defaults.defaults['Units']['Labels'])
+                    # obtain the order of the units we will display for multi-unit
+                    # offsets
+                    if device_units['group_deltat'] == 'degree_F2':
+                        dt_units = ['degree_F2', 'degree_C2']
+                    else:
+                        dt_units = ['degree_C2', 'degree_F2']
+                    if device_units['group_pressure'] == 'mmHg':
+                        p_units = ['mmHg', 'hPa', 'inHg']
+                    elif device_units['group_pressure'] == 'inHg':
+                        p_units = ['inHg', 'hPa', 'mmHg']
+                    else:
+                        p_units = ['hPa', 'inHg', 'mmHg']
+                    if device_units['group_altitude'] == 'foot':
+                        a_units = ['foot', 'meter']
+                    else:
+                        a_units = ['meter', 'foot']
+                    # now format and display the data
+                    print()
+                    print('Calibration')
+                    print(f'{"Irradiance gain":>26}: {calibration_data["solar_gain"]:.2f}')
+                    print(f'{"UV gain":>26}: {calibration_data["uv_gain"]:.2f}')
+                    print(f'{"Wind gain":>26}: {calibration_data["wind_gain"]:.2f}')
+                    _vh = weewx.units.ValueHelper(calibration_data["intemp_offset"],
+                                                  formatter=f,
+                                                  converter=c)
+                    print(f'{"Inside temperature offset":>26}: {_vh.convert(dt_units[0]).toString()} '
+                          f'({_vh.convert(dt_units[1]).toString()})')
+                    _vh = weewx.units.ValueHelper(calibration_data["inhumid_offset"],
+                                                  formatter=f,
+                                                  converter=c)
+                    print(f'{"Inside temperature offset":>26}: {_vh.toString()}')
+                    _vh = weewx.units.ValueHelper(calibration_data["outtemp_offset"],
+                                                  formatter=f,
+                                                  converter=c)
+                    print(f'{"Outside temperature offset":>26}: {_vh.convert(dt_units[0]).toString()} '
+                          f'({_vh.convert(dt_units[1]).toString()})')
+                    _vh = weewx.units.ValueHelper(calibration_data["outhumid_offset"],
+                                                  formatter=f,
+                                                  converter=c)
+                    print(f'{"Outside temperature offset":>26}: {_vh.toString()}')
+                    _vh = weewx.units.ValueHelper(calibration_data["abs_offset"],
+                                                  formatter=f,
+                                                  converter=c)
+                    print(f'{"Absolute pressure offset":>26}: {_vh.convert(p_units[0]).toString()} '
+                          f'({_vh.convert(p_units[1]).toString()}/{_vh.convert(p_units[2]).toString()})')
+                    # older firmware uses a simple relative pressure calibration
+                    # procedure that uses a fixed offset, check if we have a fixed
+                    # offset in key value 'rel_offset'
+                    if 'rel_offset' in calibration_data:
+                        _vh = weewx.units.ValueHelper(calibration_data["rel_offset"],
+                                                      formatter=f,
+                                                      converter=c)
+                        print(f'{"Relative pressure offset":>26}: {_vh.convert(p_units[0]).toString()} '
+                              f'({_vh.convert(p_units[1]).toString()}/{_vh.convert(p_units[2]).toString()})')
+                    # newer firmware (eg GW3000 v1.0.5 and later) uses an altitude
+                    # based pressure calibration procedure that uses an altitude,
+                    # check if we have an 'altitude' key value
+                    if 'altitude' in calibration_data:
+                        _vh = weewx.units.ValueHelper(calibration_data["altitude"],
+                                                      formatter=f,
+                                                      converter=c)
+                        print(f'{"Altitude for REL":>26}: {_vh.convert(a_units[0]).toString()} '
+                              f'({_vh.convert(a_units[1]).toString()})')
+                    _vh = weewx.units.ValueHelper(calibration_data["winddir_offset"],
+                                                  formatter=f,
+                                                  converter=c)
+                    print(f'{"Wind direction offset":>26}: {_vh.toString(useThisFormat="%d")}')
+                else:
+                    print()
+                    print(f'Device at {self.ip_address} did not respond.')
                 print()
-                print(f'Device at {self.ip_address} did not respond.')
-            print()
 
     def display_soil_calibration(self):
         """Display the device soil moisture sensor calibration data.
@@ -11647,42 +11659,43 @@ class DirectEcowittDevice:
         selected device.
         """
 
-        # wrap in a try..except in case there is an error
-        try:
-            # obtain an EcowittDevice object
-            device = EcowittDevice(ip_address=self.ip_address)
-            # identify the device being used
+        # obtain an EcowittDevice object
+        device = self.get_device()
+        # if we have a device interrogate it and display the data
+        if device is not None:
             print()
-            print(f'Interrogating {bcolors.BOLD}{device.model}{bcolors.ENDC} '
-                  f'at {bcolors.BOLD}{device.ip_address}{bcolors.ENDC}')
-            # get the device soil_calibration_data property
-            calibration_data = device.get_soil_calibration_data()
-            # get the device units
-            device_units = device.get_device_units()
-        except weewx.ViolatedPrecondition as e:
-            print()
-            print(f'Unable to obtain EcowittDevice object: {e}')
-        except DeviceIOError as e:
-            print()
-            print(f'Unable to connect to device at {self.ip_address}: {e}')
-        except socket.timeout:
-            print()
-            print(f'Timeout. Device at {self.ip_address} did not respond.')
-        else:
-            # did we get any calibration data
-            if calibration_data is not None:
+            # wrap in a try..except in case there is an error
+            try:
+                print(f'Interrogating {bcolors.BOLD}{device.model}{bcolors.ENDC} '
+                      f'at {bcolors.BOLD}{device.ip_address}{bcolors.ENDC}')
+                # get the device soil_calibration_data property
+                calibration_data = device.get_soil_calibration_data()
+                # get the device units
+                device_units = device.get_device_units()
+            except weewx.ViolatedPrecondition as e:
                 print()
-                print('Soil Calibration')
-                # iterate over each channel printing the channel data
-                for sensor in calibration_data:
-                    print(f'    Channel {sensor["channel"]:d} ({sensor["soilVal"]:d}%)')
-                    print(f'{"Now AD":>16}: {sensor["nowAd"]:d}')
-                    print(f'{"0% AD":>16}: {sensor["minVal"]:d}')
-                    print(f'{"100% AD":>16}: {sensor["maxVal"]:d}')
+                print(f'Unable to obtain EcowittDevice object: {e}')
+            except DeviceIOError as e:
+                print()
+                print(f'Unable to connect to device at {self.ip_address}: {e}')
+            except socket.timeout:
+                print()
+                print(f'Timeout. Device at {self.ip_address} did not respond.')
             else:
+                # did we get any calibration data
+                if calibration_data is not None:
+                    print()
+                    print('Soil Calibration')
+                    # iterate over each channel printing the channel data
+                    for sensor in calibration_data:
+                        print(f'    Channel {sensor["channel"]:d} ({sensor["soilVal"]:d}%)')
+                        print(f'{"Now AD":>16}: {sensor["nowAd"]:d}')
+                        print(f'{"0% AD":>16}: {sensor["minVal"]:d}')
+                        print(f'{"100% AD":>16}: {sensor["maxVal"]:d}')
+                else:
+                    print()
+                    print(f'Device at {self.ip_address} did not respond.')
                 print()
-                print(f'Device at {self.ip_address} did not respond.')
-            print()
 
     def display_services(self):
         """Display the device Weather Services settings.
@@ -11691,212 +11704,214 @@ class DirectEcowittDevice:
         supported by the device.
         """
 
-        # obtain an EcowittDevice object and fetch the weather services data
-        # from the device, wrap in a try..except in case there is an error
-        try:
-            # obtain an EcowittDevice object
-            device = EcowittDevice(ip_address=self.ip_address)
-            # identify the device being used
+        # obtain an EcowittDevice object
+        device = self.get_device()
+        # if we have a device interrogate it and display the data
+        if device is not None:
             print()
-            print(f'Interrogating {bcolors.BOLD}{device.model}{bcolors.ENDC} '
-                  f'at {bcolors.BOLD}{device.ip_address}{bcolors.ENDC}')
-            # get the settings for each service known to the device, store them
-            # in a dict keyed by the service name
-            services_data = device.get_ws_settings()
-        except weewx.ViolatedPrecondition as e:
-            # something precluded us obtaining an EcowittDevice object
-            print()
-            print(f'Unable to obtain EcowittDevice object: {e}')
-        except DeviceIOError as e:
-            # we could not communicate with the device
-            print()
-            print(f'Unable to connect to device at {self.ip_address}: {e}')
-        except socket.timeout:
-            # there was a timeout error contacting the device
-            print()
-            print(f'Timeout. Device at {self.ip_address} did not respond.')
-        else:
-            # we have a response but did we get any service data
-            if len(services_data) > 0:
-                # we did, now format and display the data
+            # obtain an EcowittDevice object and fetch the weather services data
+            # from the device, wrap in a try..except in case there is an error
+            try:
+                # identify the device being used
+                print(f'Interrogating {bcolors.BOLD}{device.model}{bcolors.ENDC} '
+                      f'at {bcolors.BOLD}{device.ip_address}{bcolors.ENDC}')
+                # get the settings for each service known to the device, store them
+                # in a dict keyed by the service name
+                services_data = device.get_ws_settings()
+            except weewx.ViolatedPrecondition as e:
+                # something precluded us obtaining an EcowittDevice object
                 print()
-                print('Weather Services')
+                print(f'Unable to obtain EcowittDevice object: {e}')
+            except DeviceIOError as e:
+                # we could not communicate with the device
                 print()
+                print(f'Unable to connect to device at {self.ip_address}: {e}')
+            except socket.timeout:
+                # there was a timeout error contacting the device
+                print()
+                print(f'Timeout. Device at {self.ip_address} did not respond.')
+            else:
+                # we have a response but did we get any service data
+                if len(services_data) > 0:
+                    # we did, now format and display the data
+                    print()
+                    print('Weather Services')
+                    print()
 
-                # Ecowitt.net
-                print('  Ecowitt.net')
-                # upload interval, 0 means disabled, otherwise it's the number
-                # of minutes
-                if services_data['ost_interval'] == 0:
-                    print(f'{"Upload Interval":>22}: Upload to Ecowitt.net is disabled')
-                elif services_data['ost_interval'] > 1:
-                    print(f'{"Upload Interval":>22}: {services_data["ost_interval"]:d} minutes')
-                else:
-                    print(f'{"Upload Interval":>22}: {services_data["ost_interval"]:d} minute')
-                # device MAC
-                print(f'{"MAC":>22}: {services_data["sta_mac"]}')
-                print()
+                    # Ecowitt.net
+                    print('  Ecowitt.net')
+                    # upload interval, 0 means disabled, otherwise it's the number
+                    # of minutes
+                    if services_data['ost_interval'] == 0:
+                        print(f'{"Upload Interval":>22}: Upload to Ecowitt.net is disabled')
+                    elif services_data['ost_interval'] > 1:
+                        print(f'{"Upload Interval":>22}: {services_data["ost_interval"]:d} minutes')
+                    else:
+                        print(f'{"Upload Interval":>22}: {services_data["ost_interval"]:d} minute')
+                    # device MAC
+                    print(f'{"MAC":>22}: {services_data["sta_mac"]}')
+                    print()
 
-                # Weather Underground
-                print('  Wunderground')
-                # upload interval
-                interval = services_data['wu_interval']
-                if interval is not None:
-                    if interval == 0:
-                        interval_str = '0 minutes (disabled)'
-                    elif interval == 1:
-                        interval_str = '1 minute'
-                    elif 1 < interval < 16:
-                        interval_str = f'{interval:d} minutes'
-                    elif interval >= 16:
-                        interval_str = f'{interval:d} seconds'
+                    # Weather Underground
+                    print('  Wunderground')
+                    # upload interval
+                    interval = services_data['wu_interval']
+                    if interval is not None:
+                        if interval == 0:
+                            interval_str = '0 minutes (disabled)'
+                        elif interval == 1:
+                            interval_str = '1 minute'
+                        elif 1 < interval < 16:
+                            interval_str = f'{interval:d} minutes'
+                        elif interval >= 16:
+                            interval_str = f'{interval:d} seconds'
+                        else:
+                            interval_str = '--'
                     else:
                         interval_str = '--'
-                else:
-                    interval_str = '--'
-                print(f'{"Upload Interval":>22}: {interval_str}')
-                # Station ID, obfuscate part of the Station ID unless told not
-                # to
-                wu_id = services_data['wu_id'] if self.namespace.unmask \
-                    else obfuscate(services_data['wu_id'])
-                print(f'{"Station ID":>22}: {wu_id}')
-                # Station key, obfuscate part of the Station key unless told
-                # not to
-                wu_key = services_data['wu_key'] if self.namespace.unmask \
-                    else obfuscate(services_data['wu_key'])
-                print(f'{"Station Key":>22}: {wu_key}')
-                print()
+                    print(f'{"Upload Interval":>22}: {interval_str}')
+                    # Station ID, obfuscate part of the Station ID unless told not
+                    # to
+                    wu_id = services_data['wu_id'] if self.namespace.unmask \
+                        else obfuscate(services_data['wu_id'])
+                    print(f'{"Station ID":>22}: {wu_id}')
+                    # Station key, obfuscate part of the Station key unless told
+                    # not to
+                    wu_key = services_data['wu_key'] if self.namespace.unmask \
+                        else obfuscate(services_data['wu_key'])
+                    print(f'{"Station Key":>22}: {wu_key}')
+                    print()
 
-                # Weather Cloud
-                print('  Weathercloud')
-                # upload interval in minutes
-                interval = services_data['wcl_interval']
-                if interval is not None:
-                    if interval == 0:
-                        interval_str = f'{interval:d} minutes (disabled)'
-                    elif interval > 1:
-                        interval_str = f'{interval:d} minutes'
-                    elif interval == 1:
-                        interval_str = '1 minute'
+                    # Weather Cloud
+                    print('  Weathercloud')
+                    # upload interval in minutes
+                    interval = services_data['wcl_interval']
+                    if interval is not None:
+                        if interval == 0:
+                            interval_str = f'{interval:d} minutes (disabled)'
+                        elif interval > 1:
+                            interval_str = f'{interval:d} minutes'
+                        elif interval == 1:
+                            interval_str = '1 minute'
+                        else:
+                            interval_str = '--'
                     else:
                         interval_str = '--'
-                else:
-                    interval_str = '--'
-                print(f'{"Upload Interval":>22}: {interval_str}')
-                # Weathercloud ID (WSView+ refers to it as Station ID),
-                # obfuscate part of the Weathercloud ID unless told not to
-                wcl_id = services_data['wcl_id'] if self.namespace.unmask \
-                    else obfuscate(services_data['wcl_id'])
-                print(f'{"Station ID":>22}: {wcl_id}')
-                # Weathercloud key (WSView+ refers to it as Station key),
-                # obfuscate part of the Weathercloud ID unless told not to
-                wcl_key = services_data['wcl_key'] if self.namespace.unmask \
-                    else obfuscate(services_data['wcl_key'])
-                print(f'{"Station Key":>22}: {wcl_key}')
-                print()
+                    print(f'{"Upload Interval":>22}: {interval_str}')
+                    # Weathercloud ID (WSView+ refers to it as Station ID),
+                    # obfuscate part of the Weathercloud ID unless told not to
+                    wcl_id = services_data['wcl_id'] if self.namespace.unmask \
+                        else obfuscate(services_data['wcl_id'])
+                    print(f'{"Station ID":>22}: {wcl_id}')
+                    # Weathercloud key (WSView+ refers to it as Station key),
+                    # obfuscate part of the Weathercloud ID unless told not to
+                    wcl_key = services_data['wcl_key'] if self.namespace.unmask \
+                        else obfuscate(services_data['wcl_key'])
+                    print(f'{"Station Key":>22}: {wcl_key}')
+                    print()
 
-                # Weather Observations Website
-                # upload interval in minutes
-                print('  Weather Observations Website')
-                interval = services_data['wow_interval']
-                if interval is not None:
-                    if interval == 0:
-                        interval_str = f"{interval:d} minutes (disabled)"
-                    elif interval > 1:
-                        interval_str = f"{interval:d} minutes"
-                    elif interval == 1:
-                        interval_str = "1 minute"
+                    # Weather Observations Website
+                    # upload interval in minutes
+                    print('  Weather Observations Website')
+                    interval = services_data['wow_interval']
+                    if interval is not None:
+                        if interval == 0:
+                            interval_str = f"{interval:d} minutes (disabled)"
+                        elif interval > 1:
+                            interval_str = f"{interval:d} minutes"
+                        elif interval == 1:
+                            interval_str = "1 minute"
+                        else:
+                            interval_str = "--"
                     else:
                         interval_str = "--"
-                else:
-                    interval_str = "--"
-                print(f'{"Upload Interval":>22}: {interval_str}')
-                # Station ID, obfuscate part of the Station ID unless told not
-                # to
-                wow_id = services_data['wow_id'] if self.namespace.unmask \
-                    else obfuscate(services_data['wow_id'])
-                print(f'{"Station ID":>22}: {wow_id}')
-                # Station key, obfuscate part of the Station key unless told
-                # not to
-                wow_key = services_data['wow_key'] if self.namespace.unmask \
-                    else obfuscate(services_data['wow_key'])
-                print(f'{"Station Key":>22}: {wow_key}')
-                print()
-
-                # Customised
-                print('  Customized')
-                # Is upload enabled, WSView+ only displays enabled/disabled,
-                # but include 'unknown' just in case
-                if services_data['Customized'] is None:
-                    print(f'{"Upload":>22}: {"Unknown"}')
-                elif services_data['Customized']:
-                    print(f'{"Upload":>22}: {"Enabled"}')
-                else:
-                    print(f'{"Upload":>22}: {"Disabled"}')
-                # upload protocol, WSView+ only displays Ecowitt, Wunderground
-                # and MQTT, but include 'unknown' just in case
-                if services_data['Protocol'].lower() in ('ecowitt', 'wunderground'):
-                    if services_data['Protocol'].lower() == 'ecowitt':
-                        print(f'{"Upload Protocol":>22}: {"Ecowitt"}')
-                        remote_server = services_data['ecowitt_ip']
-                        path = services_data['ecowitt_path']
-                        port_str = f"{services_data['ecowitt_port']:d}"
-                        interval_str = f"{services_data['ecowitt_upload']:d}"
-                    elif services_data['Protocol'].lower() == 'wunderground':
-                        print(f'{"Upload Protocol":>22}: {"Wunderground"}')
-                        remote_server = services_data['usr_wu_ip']
-                        path = services_data['usr_wu_path']
-                        port_str = f"{services_data['usr_wu_port']:d}"
-                        interval_str = f"{services_data['usr_wu_upload']:d}"
-                    else:
-                        print(f'{"Upload Protocol":>22}: {"Unknown"}')
-                        remote_server = "Unknown"
-                        path = "Unknown"
-                        port_str = "Unknown"
-                        interval_str = "Unknown"
-                    # remote server IP address
-                    print(f'{"Server IP/Hostname":>22}: {remote_server}')
-                    # remote server path, if using wunderground protocol we have
-                    # Station ID and Station key as well
-                    print(f'{"Path":>22}: {path}')
-                    # if using the Wunderground protocol then Station ID and
-                    # Station key are also available for use
-                    if services_data['Protocol'] == 'wunderground':
-                        usr_wu_id = services_data['usr_wu_id'] if self.namespace.unmask \
-                            else obfuscate(services_data['usr_wu_id'])
-                        print(f'{"Station ID":>22}: {usr_wu_id}')
-                        usr_wu_key = services_data['usr_wu_key'] if self.namespace.unmask \
-                            else obfuscate(services_data['usr_wu_key'])
-                        print(f'{"Station Key":>22}: {usr_wu_key}')
-                    # port
-                    print(f'{"Port":>22}: {port_str}')
-                    # upload interval in seconds
                     print(f'{"Upload Interval":>22}: {interval_str}')
-                elif services_data['Protocol'].lower() == 'mqtt':
-                        print(f'{"Upload Protocol":>22}: MQTT')
-                        print(f'{"Host":>22}: {services_data["mqtt_host"]}')
-                        print(f'{"Port":>22}: {services_data["mqtt_port"]:d}')
-                        print(f'{"Topic":>22}: {services_data["mqtt_topic"]}')
-                        print(f'{"Upload Interval":>22}: {services_data["mqtt_interval"]:d}')
-                        print(f'{"Keep Alive":>22}: {services_data["mqtt_keepalive"]:d}')
-                        # obtain an obfuscated client name if required
-                        mqtt_name = services_data["mqtt_name"] if self.namespace.unmask \
-                            else obfuscate(services_data["mqtt_name"])
-                        print(f'{"Client Name":>22}: {mqtt_name}')
-                        # obtain an obfuscated client ID if required
-                        mqtt_clientid = services_data["mqtt_clientid"] if self.namespace.unmask \
-                            else obfuscate(services_data["mqtt_clientid"])
-                        print(f'{"Client ID":>22}: {mqtt_clientid}')
-                        print(f'{"Username":>22}: {services_data["mqtt_username"]}')
-                        # obtain an obfuscated password if required
-                        mqtt_password = services_data["mqtt_password"] if self.namespace.unmask \
-                            else obfuscate(services_data["mqtt_password"])
-                        print(f'{"Password":>22}: {mqtt_password}')
-            else:
-                # we received no data, the assumption being the device did not
-                # respond
-                print()
-                print(f'Device at {self.ip_address} did not respond.')
+                    # Station ID, obfuscate part of the Station ID unless told not
+                    # to
+                    wow_id = services_data['wow_id'] if self.namespace.unmask \
+                        else obfuscate(services_data['wow_id'])
+                    print(f'{"Station ID":>22}: {wow_id}')
+                    # Station key, obfuscate part of the Station key unless told
+                    # not to
+                    wow_key = services_data['wow_key'] if self.namespace.unmask \
+                        else obfuscate(services_data['wow_key'])
+                    print(f'{"Station Key":>22}: {wow_key}')
+                    print()
+
+                    # Customised
+                    print('  Customized')
+                    # Is upload enabled, WSView+ only displays enabled/disabled,
+                    # but include 'unknown' just in case
+                    if services_data['Customized'] is None:
+                        print(f'{"Upload":>22}: {"Unknown"}')
+                    elif services_data['Customized']:
+                        print(f'{"Upload":>22}: {"Enabled"}')
+                    else:
+                        print(f'{"Upload":>22}: {"Disabled"}')
+                    # upload protocol, WSView+ only displays Ecowitt, Wunderground
+                    # and MQTT, but include 'unknown' just in case
+                    if services_data['Protocol'].lower() in ('ecowitt', 'wunderground'):
+                        if services_data['Protocol'].lower() == 'ecowitt':
+                            print(f'{"Upload Protocol":>22}: {"Ecowitt"}')
+                            remote_server = services_data['ecowitt_ip']
+                            path = services_data['ecowitt_path']
+                            port_str = f"{services_data['ecowitt_port']:d}"
+                            interval_str = f"{services_data['ecowitt_upload']:d}"
+                        elif services_data['Protocol'].lower() == 'wunderground':
+                            print(f'{"Upload Protocol":>22}: {"Wunderground"}')
+                            remote_server = services_data['usr_wu_ip']
+                            path = services_data['usr_wu_path']
+                            port_str = f"{services_data['usr_wu_port']:d}"
+                            interval_str = f"{services_data['usr_wu_upload']:d}"
+                        else:
+                            print(f'{"Upload Protocol":>22}: {"Unknown"}')
+                            remote_server = "Unknown"
+                            path = "Unknown"
+                            port_str = "Unknown"
+                            interval_str = "Unknown"
+                        # remote server IP address
+                        print(f'{"Server IP/Hostname":>22}: {remote_server}')
+                        # remote server path, if using wunderground protocol we have
+                        # Station ID and Station key as well
+                        print(f'{"Path":>22}: {path}')
+                        # if using the Wunderground protocol then Station ID and
+                        # Station key are also available for use
+                        if services_data['Protocol'] == 'wunderground':
+                            usr_wu_id = services_data['usr_wu_id'] if self.namespace.unmask \
+                                else obfuscate(services_data['usr_wu_id'])
+                            print(f'{"Station ID":>22}: {usr_wu_id}')
+                            usr_wu_key = services_data['usr_wu_key'] if self.namespace.unmask \
+                                else obfuscate(services_data['usr_wu_key'])
+                            print(f'{"Station Key":>22}: {usr_wu_key}')
+                        # port
+                        print(f'{"Port":>22}: {port_str}')
+                        # upload interval in seconds
+                        print(f'{"Upload Interval":>22}: {interval_str}')
+                    elif services_data['Protocol'].lower() == 'mqtt':
+                            print(f'{"Upload Protocol":>22}: MQTT')
+                            print(f'{"Host":>22}: {services_data["mqtt_host"]}')
+                            print(f'{"Port":>22}: {services_data["mqtt_port"]:d}')
+                            print(f'{"Topic":>22}: {services_data["mqtt_topic"]}')
+                            print(f'{"Upload Interval":>22}: {services_data["mqtt_interval"]:d}')
+                            print(f'{"Keep Alive":>22}: {services_data["mqtt_keepalive"]:d}')
+                            # obtain an obfuscated client name if required
+                            mqtt_name = services_data["mqtt_name"] if self.namespace.unmask \
+                                else obfuscate(services_data["mqtt_name"])
+                            print(f'{"Client Name":>22}: {mqtt_name}')
+                            # obtain an obfuscated client ID if required
+                            mqtt_clientid = services_data["mqtt_clientid"] if self.namespace.unmask \
+                                else obfuscate(services_data["mqtt_clientid"])
+                            print(f'{"Client ID":>22}: {mqtt_clientid}')
+                            print(f'{"Username":>22}: {services_data["mqtt_username"]}')
+                            # obtain an obfuscated password if required
+                            mqtt_password = services_data["mqtt_password"] if self.namespace.unmask \
+                                else obfuscate(services_data["mqtt_password"])
+                            print(f'{"Password":>22}: {mqtt_password}')
+                else:
+                    # we received no data, the assumption being the device did not
+                    # respond
+                    print()
+                    print(f'Device at {self.ip_address} did not respond.')
 
     def display_mac(self):
         """Display the device hardware MAC address.
@@ -11904,26 +11919,28 @@ class DirectEcowittDevice:
         Obtain and display the hardware MAC address of the selected device.
         """
 
-        # wrap in a try..except in case there is an error
-        try:
-            # obtain an EcowittDevice object
-            device = EcowittDevice(ip_address=self.ip_address)
-            # identify the device being used
-            print()
-            print(f'Interrogating {bcolors.BOLD}{device.model}{bcolors.ENDC} '
-                  f'at {bcolors.BOLD}{device.ip_address}{bcolors.ENDC}')
-            print()
-            # get the device MAC address
-            print(f'{"MAC address":>15}: {device.mac_address}')
-        except weewx.ViolatedPrecondition as e:
-            print()
-            print(f'Unable to obtain EcowittDevice object: {e}')
-        except DeviceIOError as e:
-            print()
-            print(f'Unable to connect to device at {self.ip_address}: {e}')
-        except socket.timeout:
-            print()
-            print(f'Timeout. Device at {self.ip_address} did not respond.')
+        # obtain an EcowittDevice object
+        device = self.get_device()
+        print()
+        # if we have a device interrogate it and display the data
+        if device is not None:
+            # wrap in a try..except in case there is an error
+            try:
+                # identify the device being used
+                print(f'Interrogating {bcolors.BOLD}{device.model}{bcolors.ENDC} '
+                      f'at {bcolors.BOLD}{device.ip_address}{bcolors.ENDC}')
+                print()
+                # get the device MAC address
+                print(f'{"MAC address":>15}: {device.mac_address}')
+            except weewx.ViolatedPrecondition as e:
+                print()
+                print(f'Unable to obtain EcowittDevice object: {e}')
+            except DeviceIOError as e:
+                print()
+                print(f'Unable to connect to device at {self.ip_address}: {e}')
+            except socket.timeout:
+                print()
+                print(f'Timeout. Device at {self.ip_address} did not respond.')
 
     def display_firmware(self):
         """Display device firmware details.
@@ -11932,76 +11949,78 @@ class DirectEcowittDevice:
         device. User is advised whether a firmware update is available or not.
         """
 
-        # wrap in a try..except in case there is an error
-        try:
-            # obtain an EcowittDevice object
-            device = EcowittDevice(ip_address=self.ip_address)
-            # get the device model, we will use this multiple times
-            model = device.model
-            # identify the device being used
+        # obtain an EcowittDevice object
+        device = self.get_device()
+        # if we have a device interrogate it and display the data
+        if device is not None:
             print()
-            print(f'Interrogating {bcolors.BOLD}{device.model}{bcolors.ENDC} '
-                  f'at {bcolors.BOLD}{device.ip_address}{bcolors.ENDC}')
-            print()
-            # get the firmware version via the API
-            model_str = f'installed {model} firmware version'
-            print(f'{model_str:>35}: {device.firmware_version}')
-            sensor_fw = device.sensor_firmware_versions
-            if sensor_fw is not None:
-                for sensor, sensor_fw_ver in sensor_fw.items():
-                    sensor_fw_model_str = f"installed {sensor} firmware version"
-                    print(f'{sensor_fw_model_str:>35}: {sensor_fw_ver}')
-            print()
-            fw_update_avail = device.firmware_update_avail
-            if fw_update_avail:
-                # we have an available firmware update
-                # obtain the 'curr_msg' from the device HTTP API
-                # 'get_device_info' command, this field usually contains the
-                # firmware change details
-                curr_msg = device.firmware_update_message
-                # now print the firmware update details
-                print(f'    a firmware update is available for this {model}')
-                print(f'    update at http://{self.ip_address} or via the WSView Plus app')
-                # if we have firmware update details print them
-                if curr_msg is not None:
-                    print()
-                    # Ecowitt have not documented the HTTP API calls so we are
-                    # not exactly sure what the 'curr_msg' field is used for,
-                    # it might be for other things as well
-                    print('    likely firmware update message:')
-                    # multi-line messages seem to have \r\n at the end of each
-                    # line, split the string so we can format it a little better
-                    if '\r\n' in curr_msg:
-                        for line in curr_msg.split('\r\n'):
-                            # print each line
-                            print(f'      {line}')
+            # wrap in a try..except in case there is an error
+            try:
+                # get the device model, we will use this multiple times
+                model = device.model
+                # identify the device being used
+                print(f'Interrogating {bcolors.BOLD}{device.model}{bcolors.ENDC} '
+                      f'at {bcolors.BOLD}{device.ip_address}{bcolors.ENDC}')
+                print()
+                # get the firmware version via the API
+                model_str = f'installed {model} firmware version'
+                print(f'{model_str:>35}: {device.firmware_version}')
+                sensor_fw = device.sensor_firmware_versions
+                if sensor_fw is not None:
+                    for sensor, sensor_fw_ver in sensor_fw.items():
+                        sensor_fw_model_str = f"installed {sensor} firmware version"
+                        print(f'{sensor_fw_model_str:>35}: {sensor_fw_ver}')
+                print()
+                fw_update_avail = device.firmware_update_avail
+                if fw_update_avail:
+                    # we have an available firmware update
+                    # obtain the 'curr_msg' from the device HTTP API
+                    # 'get_device_info' command, this field usually contains the
+                    # firmware change details
+                    curr_msg = device.firmware_update_message
+                    # now print the firmware update details
+                    print(f'    a firmware update is available for this {model}')
+                    print(f'    update at http://{self.ip_address} or via the WSView Plus app')
+                    # if we have firmware update details print them
+                    if curr_msg is not None:
+                        print()
+                        # Ecowitt have not documented the HTTP API calls so we are
+                        # not exactly sure what the 'curr_msg' field is used for,
+                        # it might be for other things as well
+                        print('    likely firmware update message:')
+                        # multi-line messages seem to have \r\n at the end of each
+                        # line, split the string so we can format it a little better
+                        if '\r\n' in curr_msg:
+                            for line in curr_msg.split('\r\n'):
+                                # print each line
+                                print(f'      {line}')
+                        else:
+                            # print as a single line
+                            print(f'      {curr_msg}')
                     else:
-                        # print as a single line
-                        print(f'      {curr_msg}')
+                        # we had no 'curr_msg' for one reason or another
+                        print('    no firmware update message found')
+                elif fw_update_avail is None:
+                    # we don't know if we have an available firmware update
+                    print(f'    could not determine if a firmware update is available for this {model}')
                 else:
-                    # we had no 'curr_msg' for one reason or another
-                    print('    no firmware update message found')
-            elif fw_update_avail is None:
-                # we don't know if we have an available firmware update
-                print(f'    could not determine if a firmware update is available for this {model}')
-            else:
-                # there must be no available firmware update
-                print(f'    the firmware is up to date for this {model}')
-        except weewx.ViolatedPrecondition as e:
-            print()
-            print(f'Unable to obtain EcowittDevice object: {e}')
-            print()
-            self.device_connection_help()
-        except DeviceIOError as e:
-            print()
-            print(f'Unable to connect to device at {self.ip_address}: {e}')
-            print()
-            self.device_connection_help()
-        except socket.timeout:
-            print()
-            print(f'Timeout. Device at {self.ip_address} did not respond.')
-            print()
-            self.device_connection_help()
+                    # there must be no available firmware update
+                    print(f'    the firmware is up to date for this {model}')
+            except weewx.ViolatedPrecondition as e:
+                print()
+                print(f'Unable to obtain EcowittDevice object: {e}')
+                print()
+                self.device_connection_help()
+            except DeviceIOError as e:
+                print()
+                print(f'Unable to connect to device at {self.ip_address}: {e}')
+                print()
+                self.device_connection_help()
+            except socket.timeout:
+                print()
+                print(f'Timeout. Device at {self.ip_address} did not respond.')
+                print()
+                self.device_connection_help()
 
     def display_sensors(self, registered_only=False):
         """Display the device sensor ID information.
@@ -12104,67 +12123,68 @@ class DirectEcowittDevice:
             # print the overall sensor metadata text
             print(f'{sensor_name_str.upper():<10} {sensor_id_str:<25} {signal_str} {battery_str}')
 
-        # wrap in a try..except in case there is an error
-        try:
-            # obtain an EcowittDevice object, an EcowittDevice has access to
-            # details of all sensors
-            device = EcowittDevice(ip_address=self.ip_address)
-            # identify the device being used
+        # obtain an EcowittDevice object
+        device = self.get_device()
+        # if we have a device interrogate it and display the data
+        if device is not None:
             print()
-            print(f'Interrogating {bcolors.BOLD}{device.model}{bcolors.ENDC} '
-                  f'at {bcolors.BOLD}{device.ip_address}{bcolors.ENDC}')
-        except weewx.ViolatedPrecondition as e:
-            print()
-            print(f'Unable to obtain EcowittDevice object: {e}')
-        except DeviceIOError as e:
-            print()
-            print(f'Unable to connect to device at {self.ip_address}: {e}')
-            print()
-            self.device_connection_help()
-        except socket.timeout:
-            print()
-            print(f'Timeout. Device at {self.ip_address} did not respond.')
-            print()
-            self.device_connection_help()
-        else:
-            # get the latest sensors data from the device
-            sensors_data = device.get_sensors_data(connected_only=False,
-                                                   flatten_data=False)
-            # get the latest live data  from the device
-            live_data = device.get_live_data(flatten_data=True)
-            # update the device' EcowittSensors object
-            device.sensors.update_sensor_data(all_sensor_data=sensors_data,
-                                              live_data=live_data)
-            # now get the sensor metadata from the device
-            sensors_metadata = device.sensors.data
-            # do we have any sensor data
-            if sensors_metadata is not None and len(sensors_metadata) > 0:
-                # iterate over each sensor model in display order
-                for model in self.sensor_display_order:
-                    # get the sensor metadata
-                    data = sensors_metadata.get(model)
-                    # do we have any data for this model, if not skip this
-                    # model
-                    if data is None:
-                        continue
-                    # do we have a channelised or non-channelised model
-                    if 'address' in data.keys():
-                        # we have a non-channelised sensor
-                        print_sensor(model=model, sensor_data=data)
-                    else:
-                        # we have a channelised sensor
-                        for channel, channel_data in data.items():
-                            print_sensor(model=model,
-                                         sensor_data=channel_data,
-                                         channel=channel)
-            elif len(sensors_data) == 0:
-                # we were given no sensor data, inform the user
+            # wrap in a try..except in case there is an error
+            try:
+                # identify the device being used
+                print(f'Interrogating {bcolors.BOLD}{device.model}{bcolors.ENDC} '
+                      f'at {bcolors.BOLD}{device.ip_address}{bcolors.ENDC}')
+            except weewx.ViolatedPrecondition as e:
                 print()
-                print(f'Device at {self.ip_address} did not return any sensor data.')
+                print(f'Unable to obtain EcowittDevice object: {e}')
+            except DeviceIOError as e:
+                print()
+                print(f'Unable to connect to device at {self.ip_address}: {e}')
+                print()
+                self.device_connection_help()
+            except socket.timeout:
+                print()
+                print(f'Timeout. Device at {self.ip_address} did not respond.')
+                print()
+                self.device_connection_help()
             else:
-                # the device did not respond, inform the user
-                print()
-                print(f'Device at {self.ip_address} did not respond.')
+                # get the latest sensors data from the device
+                sensors_data = device.get_sensors_data(connected_only=False,
+                                                       flatten_data=False)
+                # get the latest live data  from the device
+                live_data = device.get_live_data(flatten_data=True)
+                # update the device' EcowittSensors object
+                device.sensors.update_sensor_data(all_sensor_data=sensors_data,
+                                                  live_data=live_data)
+                # now get the sensor metadata from the device
+                sensors_metadata = device.sensors.data
+                # do we have any sensor data
+                if sensors_metadata is not None and len(sensors_metadata) > 0:
+                    # iterate over each sensor model in display order
+                    for model in self.sensor_display_order:
+                        # get the sensor metadata
+                        data = sensors_metadata.get(model)
+                        # do we have any data for this model, if not skip this
+                        # model
+                        if data is None:
+                            continue
+                        # do we have a channelised or non-channelised model
+                        if 'address' in data.keys():
+                            # we have a non-channelised sensor
+                            print_sensor(model=model, sensor_data=data)
+                        else:
+                            # we have a channelised sensor
+                            for channel, channel_data in data.items():
+                                print_sensor(model=model,
+                                             sensor_data=channel_data,
+                                             channel=channel)
+                elif len(sensors_data) == 0:
+                    # we were given no sensor data, inform the user
+                    print()
+                    print(f'Device at {self.ip_address} did not return any sensor data.')
+                else:
+                    # the device did not respond, inform the user
+                    print()
+                    print(f'Device at {self.ip_address} did not respond.')
 
     def display_live_data(self):
         """Display the device live sensor data.
@@ -13075,6 +13095,7 @@ def main():
     parser.add_argument('--max-tries',
                         dest='max_tries',
                         type=int,
+                        default=DEFAULT_MAX_TRIES,
                         help='max number of attempts to contact the device')
     parser.add_argument('--retry-wait',
                         dest='retry_wait',
@@ -13087,12 +13108,12 @@ def main():
     parser.add_argument('--discovery-port',
                         dest='discovery_port',
                         type=int,
-                        default=59387,
+                        default=DEFAULT_DISCOVERY_PORT,
                         help='port to listen to when discovering devices')
     parser.add_argument('--discovery-timeout',
                         dest='discovery_timeout',
                         type=int,
-                        default=20,
+                        default=DEFAULT_DISCOVERY_TIMEOUT,
                         help='how long to listen when discovering devices')
     parser.add_argument('--show-all-batt',
                         dest='show_battery',
