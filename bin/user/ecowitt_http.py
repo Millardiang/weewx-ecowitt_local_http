@@ -3702,7 +3702,7 @@ class EcowittDeviceCatchup:
             raise CatchupObjectError(f"{self.device.model} at '{self.ip_address}' does "
                                      f"not appear to support HTTP API based catchup")
         # save our driver debug settings
-        self.driver_debug = options.get('driver_debug')
+        self.driver_debug = options.get('driver_debug', DebugOptions())
         # obtain a suitable Mapper object to map the SD card history data, the
         # default map is what we want so pass an empty config
         self.mapper = SdMapper(driver_debug=self.driver_debug,
