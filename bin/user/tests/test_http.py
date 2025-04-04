@@ -210,6 +210,14 @@ class DeviceCatchupTestCase(unittest.TestCase):
         'null': {
             'test_data': ['1234\x005ABCDE', '678\x0090FGHI\x00J'],
             'response': ['12345ABCDE', '67890FGHIJ']
+        },
+        'blank': {
+            'test_data': ['12345ABCDE', '\n', '\n', '67890FGHIJ'],
+            'response': ['12345ABCDE', '67890FGHIJ']
+        },
+        'blanknull': {
+            'test_data': ['\n', '1234\x005ABCDE', '\n', '678\x0090FGHI\x00J'],
+            'response': ['12345ABCDE', '67890FGHIJ']
         }
 
     }
@@ -314,6 +322,9 @@ class DeviceCatchupTestCase(unittest.TestCase):
         # test data that includes null bytes
         self.assertSequenceEqual(device_catchup.clean_data(self.clean_data['null']['test_data']),
                                  self.clean_data['null']['response'])
+        # test data that includes blank lines
+        self.assertSequenceEqual(device_catchup.clean_data(self.clean_data['blank']['test_data']),
+                                 self.clean_data['blank']['response'])
 
     @staticmethod
     def get_device_catchup(config, caller):
