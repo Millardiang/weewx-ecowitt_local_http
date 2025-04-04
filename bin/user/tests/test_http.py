@@ -202,6 +202,18 @@ class DeviceCatchupTestCase(unittest.TestCase):
     # mocked EcowittDevice.get_sdmmc_info response
     fake_get_sdmmc_info_data = {}
 
+    clean_data = {
+        'clean': {
+            'test_data': ['12345ABCDE', '67890FGHIJ'],
+            'response': ['12345ABCDE', '67890FGHIJ']
+        },
+        'null': {
+            'test_data': ['1234\x005ABCDE', '678\x0090FGHI\x00J'],
+            'response': ['12345ABCDE', '67890FGHIJ']
+        }
+
+    }
+
     @patch.object(user.ecowitt_http.EcowittDevice, 'get_sdmmc_info_data')
     def test_device_catchup_init(self, mock_get_sdmmc_info_data):
         """Test EcowittCatchupDevice initialisation."""
@@ -283,6 +295,25 @@ class DeviceCatchupTestCase(unittest.TestCase):
         device_catchup_config_copy['max_retries'] = 'four'
         # test nonsense max_retries raises a ValueError
         self.assertRaises(ValueError, self.get_device_catchup, **kw_args)
+
+    @patch.object(user.ecowitt_http.EcowittDevice, 'get_sdmmc_info_data')
+    def test_clean_data(self, mock_get_sdmmc_info_data):
+        """Test EcowittCatchupDevice clean_data method."""
+
+        print()
+        print('   testing EcowittCatchupDevice.clean_data() ...')
+        # set return values for mocked methods
+        # get_sdmmc_info_data
+        mock_get_sdmmc_info_data.return_value = DeviceCatchupTestCase.fake_get_sdmmc_info_data
+        # obtain an EcowittDeviceCatchup object
+        device_catchup = self.get_device_catchup(config=configobj.ConfigObj(self.device_catchup_config),
+                                                 caller='test_clean_data')
+        # test data that is already 'clean'
+        self.assertSequenceEqual(device_catchup.clean_data(self.clean_data['clean']['test_data']),
+                                 self.clean_data['clean']['response'])
+        # test data that includes null bytes
+        self.assertSequenceEqual(device_catchup.clean_data(self.clean_data['null']['test_data']),
+                                 self.clean_data['null']['response'])
 
     @staticmethod
     def get_device_catchup(config, caller):
