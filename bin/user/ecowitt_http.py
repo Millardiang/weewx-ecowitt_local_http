@@ -2656,11 +2656,12 @@ class EcowittHttpDriverConfEditor(weewx.drivers.AbstractConfEditor):
 
     @staticmethod
     def modify_config(config_dict):
-        """"""
+        """Make Ecowitt local HTTP API driver specific changes to WeeWX config."""
+
         import weecfg
-        # TODO. What should be being merged int o what?
 
         # set loop_on_init
+
         # obtain the current loop_on_init setting if it exists, default
         # to 1 (enabled)
         default = config_dict.get('loop_on_init', '1')
@@ -2687,44 +2688,66 @@ startup once only or '1' to attempt startup indefinitely."""
                                                     '# Whether to try indefinitely to load the driver']
         print()
 
-        # Set rain deltas. Setting the rain deltas is a complex process as the
-        # user may choose to use a traditional or piezo rainfall gauge and then
-        # may choose to use a year, month, week or day cumulative field.
+        # Set rain deltas. Setting the rain deltas is a complex process that
+        # involves the user choosing to use a traditional or piezo rainfall
+        # gauge and then choosing to use a year, month, week or day cumulative
+        # field.
 
         # We need to know the field map being used as the user deals with WeeWX
         # field names but the choices offered as based on mapped Ecowitt
-        # fields. First get a HttpMapper based on our driver config stanza
-        # (if it exists).
+        # fields. First get a HttpMapper object based on our driver config
+        # stanza (if it exists).
         _mapper = HttpMapper(config_dict.get('EcowittHttp', {}))
-        # now get the field map from the mapper but convert it to an
-        # InvertibleMap so we can look up 'keys' and 'values'
+        # now get the field map from the mapper, but convert it to an
+        # InvertibleMap so we can look up both 'keys' and 'values'
         _field_map = InvertibleMap(_mapper.field_map)
         # obtain the current [StdWXCalculate] [[Deltas]] config if it exists
         _deltas_config_dict = config_dict['StdWXCalculate'].get('Deltas', {})
-        # get the WeeWX field used as the 'rain' 'input' field
+        # get the WeeWX field currently used as the 'rain' 'input' field, if
+        # there isn't one then use None
         curr_rain_w_src = _deltas_config_dict['rain'].get('input') if 'rain' in _deltas_config_dict else None
-        # get the Ecowitt field used as the source for the 'rain' 'input' field
+        # get the Ecowitt field used to derive the WeeWX field that is used as
+        # the 'rain' 'input' field, if there isn't such a WeeWX field then use
+        # None
         curr_rain_e_src = _field_map.get(curr_rain_w_src) if curr_rain_w_src is not None else None
-        # determine whether WeeWX field 'rain' is based on traditional or piezo
-        # rain
-        source = None
+        # Determine the rain gauge type in use, it will be either 'traditional'
+        # or 'piezo'. If we can't determine the type then use None
+        curr_gauge_type = None
         if curr_rain_w_src is not None:
             if curr_rain_e_src in EcowittHttpDriverConfEditor.t_src_fields:
-                source =  'traditional'
+                curr_gauge_type =  'traditional'
             elif curr_rain_e_src in EcowittHttpDriverConfEditor.p_src_fields:
-                source = 'piezo'
-        # now we can determine the preferred WeeWX field name
+                curr_gauge_type = 'piezo'
+        # Now we can determine the preferred WeeWX field name for traditional
+        # and piezo gauges, it is the available cumulative rain field with the
+        # longest reset interval. If no field is available (unlikely) then use
+        # None.
+        # traditional - set our preferred field name to None until we find a
+        # field
         pref_t_field = None
+        # iterate over the possible Ecowitt source fields
         for _field in EcowittHttpDriverConfEditor.t_src_fields:
+            # does that field appear in the field map, it is of no use if it
+            # does not
             if _field in _field_map.values():
+                # we have a field we can use, now do an inverse lookup to find
+                # the WeeWX field it is mapped to
                 pref_t_field = _field_map.inverse[_field]
+                # no need to search further, break out of the loop
                 break
+        # piezo - set our preferred field name to None until we find a field
         pref_p_field = None
+        # iterate over the possible Ecowitt source fields
         for _field in EcowittHttpDriverConfEditor.p_src_fields:
+            # does that field appear in the field map, it is of no use if it
+            # does not
             if _field in _field_map.values():
+                # we have a field we can use, now do an inverse lookup to find
+                # the WeeWX field it is mapped to
                 pref_p_field = _field_map.inverse[_field]
+                # no need to search further, break out of the loop
                 break
-
+        # construct the prompt text
         prompt = """Ecowitt gateways/consoles support both traditional 
 tipping and piezoelectric rainfall gauges. Consequently, the HTTP driver 
 can populate the WeeWX field 'rain' from either a traditional rainfall
@@ -2733,43 +2756,74 @@ populate WeeWX field 'rain' from a paired traditional rainfall gauge
 or 'piezo' to populate WeeWX field 'rain' from a paired piezoelectric 
 rainfall gauge."""
         print()
-        _rain_source = weecfg.prompt_with_options(prompt, source, ['traditional', 'piezo']).lower()
-        if _rain_source.lower() == 'traditional':
+        # determine the default gauge type to be offered, it will be the
+        # current in-use gauge type, of it there isn't one 'traditional'
+        default = curr_gauge_type if curr_gauge_type is not None else 'traditional'
+        # obtain the user rain gauge type being used
+        _gauge_type = weecfg.prompt_with_options(prompt, default, ['traditional', 'piezo']).lower()
+        # given the rain gauge type selected obtain the source field to be used
+        # to calculate WeeWX field 'rain'
+        if _gauge_type.lower() == 'traditional':
             # a traditional rainfall gauge was chosen
-            _curr_rain_source = pref_t_field
-            if source == 'traditional':
-                _curr_rain_source =  curr_rain_w_src if curr_rain_w_src is not None else pref_t_field
+            # Get the default WeeWX source field, it is the WeeWX field
+            # currently used to derive the WeeWX 'rain' field if we are
+            # currently using a traditional gauge. If one does not exist or we
+            # are currently using a piezo gauge use the preferred traditional
+            # field from earlier.
+            if curr_gauge_type == 'traditional':
+                default_source =  curr_rain_w_src if curr_rain_w_src is not None else pref_t_field
+            else:
+                default_source = pref_t_field
             # construct a string listing the available WeeWX traditional
-            # cumulative rain fields
-            t_fields = ['%s' % _field_map.inverse[f] for
-                        f in EcowittHttpDriverConfEditor.t_src_fields if f in _field_map.values()]
-            _default = ','.join(t_fields)
-        elif _rain_source.lower() == 'piezo':
-            # a piezo rainfall gauge was chosen
-            _curr_rain_source = pref_p_field
-            if source == 'piezo':
-                _curr_rain_source =  curr_rain_w_src if curr_rain_w_src is not None else pref_p_field
+            # cumulative rain fields, the available fields consist of those
+            # fields in our traditional source field list that exist in the
+            # field map
+            t_fields = [_field_map.inverse[f] for f in EcowittHttpDriverConfEditor.t_src_fields
+                        if f in _field_map.values()]
+            # now produce a string consisting of a comma separated list of
+            # available WeeWX fields
+            options = ','.join(t_fields)
+        elif _gauge_type.lower() == 'piezo':
+            # a traditional rainfall gauge was chosen
+            # Get the default WeeWX source field, it is the WeeWX field
+            # currently used to derive the WeeWX 'rain' field if we are
+            # currently using a piezo gauge. If one does not exist or we are
+            # currently using a traditional gauge use the preferred piezo field
+            # from earlier.
+            if curr_gauge_type == 'piezo':
+                default_source =  curr_rain_w_src if curr_rain_w_src is not None else pref_p_field
+            else:
+                default_source = pref_p_field
             # construct a string listing the available WeeWX piezo cumulative
             # rain fields
-            p_fields = ['%s' % _field_map.inverse[f] for
-                        f in EcowittHttpDriverConfEditor.p_src_fields if f in _field_map.values()]
-            t_default = ','.join(p_fields)
+            p_fields = [_field_map.inverse[f] for f in EcowittHttpDriverConfEditor.p_src_fields
+                        if f in _field_map.values()]
+            # now produce a string consisting of a comma separated list of
+            # available WeeWX fields
+            options = ','.join(p_fields)
         # construct the prompt text to use
-        _prompt = """Select the WeeWX field to be used to derive WeeWX field 'rain'."""
-        _rain_field = weecfg.prompt_with_options(_prompt, _curr_rain_source, _default).lower()
+        field_prompt = """Select the WeeWX field to be used to derive WeeWX field 'rain'."""
+        # obtain the user rain source field selection
+        rain_source_field = weecfg.prompt_with_options(field_prompt, default_source, options)
+        # define the rain config template string
         _rain_config_str = f"""
 [StdWXCalculate]
     [[Calculations]]
         rain = prefer_hardware
     [[Deltas]]
         [[[rain]]]
-            input = {_rain_field}"""
-        _rain_config_dict = configobj.ConfigObj(io.StringIO(_rain_config_str % (_rain_field,)))
+            input = {rain_source_field}"""
+        # convert the rain config string to a ConfigObj
+        _rain_config_dict = configobj.ConfigObj(io.StringIO(_rain_config_str))
+        # merge the rain config into our overall config
         config_dict.merge(_rain_config_dict)
         print()
 
         # set lightning_strike_count
+        # there is no user input for this, but inform the user what we are
+        # doing
         print("""Setting lightning_strike_count calculation.""")
+        # define the lightning strike count config string
         lightning_config_str = """
         [StdWXCalculate]
             [[Calculations]]
@@ -2777,16 +2831,23 @@ rainfall gauge."""
             [[Deltas]]
                 [[[lightning_strike_count]]]
                     input = lightningcount"""
+        # convert the lightning strike count config string to a ConfigObj
         lightning_config_dict = configobj.ConfigObj(io.StringIO(lightning_config_str))
+        # merge the lightning strike count config into our overall config
         config_dict.merge(lightning_config_dict)
         print()
 
         # set record generation to software
+        # there is no user input for this, but inform the user what we are
+        # doing
         print("""Setting record_generation to software.""")
+        # update the record_generation setting directly
         config_dict['StdArchive']['record_generation'] = 'software'
         print()
 
         # set the accumulator extractor functions
+        # there is no user input for this, but inform the user what we are
+        # doing
         print("""Setting accumulator extractor functions.""")
         # construct our default accumulator config dict
         accum_config_dict = configobj.ConfigObj(io.StringIO(EcowittHttpDriverConfEditor.accum_config_str))
