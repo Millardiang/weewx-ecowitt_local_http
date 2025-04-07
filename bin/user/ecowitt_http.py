@@ -2578,11 +2578,11 @@ class EcowittHttpDriverConfEditor(weewx.drivers.AbstractConfEditor):
         # how often to poll the device
         poll_interval = {int(DEFAULT_POLL_INTERVAL):d}
         # how many attempts to contact the device before giving up
-        max_tries = 3
+        max_tries = {int(DEFAULT_MAX_TRIES):d}
         # wait time in seconds between retries to contact the device
-        retry_wait = 2
+        retry_wait = {int(DEFAULT_RETRY_WAIT):d}
         # max wait for device to respond to a HTTP request
-        url_timeout = 3
+        url_timeout = {int(DEFAULT_URL_TIMEOUT):d}
         
         # whether to show all battery state data including nonsense data and 
         # sensors that are disabled sensors and connecting
@@ -2648,11 +2648,27 @@ class EcowittHttpDriverConfEditor(weewx.drivers.AbstractConfEditor):
 
     @staticmethod
     def modify_config(config_dict):
+        """
+
+        't_rainday': 'rain.0x10.val',
+        't_rainweek': 'rain.0x11.val',
+        't_rainmonth': 'rain.0x12.val',
+        't_rainyear': 'rain.0x13.val',
+        'is_raining': 'piezoRain.srain_piezo.val',
+        'p_rainevent': 'piezoRain.0x0D.val',
+        'p_rainrate': 'piezoRain.0x0E.val',
+        'p_rainhour': 'p_rainhour',
+        'p_rainday': 'piezoRain.0x10.val',
+        'p_rainweek': 'piezoRain.0x11.val',
+        'p_rainmonth': 'piezoRain.0x12.val',
+        'p_rainyear': 'piezoRain.0x13.val',
+        """
         import weecfg
+        # TODO. What should be being merged int o what?
 
         # set loop_on_init
         loop_on_init_config = """loop_on_init = %d"""
-        dflt = config_dict.get('loop_on_init', '1')
+        config_dict.get('loop_on_init', '1')
         label = """The Ecowitt HTTP driver requires a network 
 connection to the device. Consequently, the absence of a network 
 connection when WeeWX starts will cause WeeWX to exit. The 
@@ -2666,6 +2682,87 @@ startup once only or '1' to attempt startup indefinitely."""
         if len(config_dict.comments['loop_on_init']) == 0:
             config_dict.comments['loop_on_init'] = ['',
                                                     '# Whether to try indefinitely to load the driver']
+        print()
+
+        # set rain deltas
+        t_src_fields = ('rain.0x13.val', 'rain.0x12.val', 'rain.0x11.val','rain.0x10.val')
+        p_src_fields = ('piezoRain.0x13.val', 'piezoRain.0x12.val', 'piezoRain.0x11.val','piezoRain.0x10.val')
+
+        # first get a HttpMapper based on our driver config stanza (if it exists)
+        mapper = HttpMapper(config_dict.get('EcowittHttp', {}))
+        # get a copy of the mapper field map as an InvertableMap
+        _field_map = InvertibleMap(mapper.field_map)
+        # piezo rain to populate the WeeWX field 'rain'
+        _curr_deltas = config_dict['StdWXCalculate'].get('Deltas')
+        curr_rain_src = _curr_deltas['rain'].get('input')
+        curr_rain_src_src = _field_map.get(curr_rain_src) if curr_rain_src is not None else None
+        # do an inverse lookup to determine the WeeWX field names being used for traditional and piezo rain
+        _t_src_field = _field_map.inverse['rain.0x13.val']
+        _p_src_field = _field_map.inverse['piezoRain.0x13.val']
+
+        # determine whether we are currently configured to use traditional or
+        source = ''
+        if curr_rain_src_src is not None:
+            if _curr_deltas['rain'].get('input') in t_src_fields:
+                source =  'traditional'
+            elif _curr_deltas['rain'].get('input') in p_src_fields:
+                source = 'piezo'
+        # now we can determine the preferred WeeWX field name
+        # do an inverse lookup to determine the WeeWX field names being used for traditional and piezo rain
+        pref_t_field = None
+        for _field in t_src_fields:
+            if _field in _field_map.values()
+                pref_t_field = _field_map.inverse[_field]
+        pref_p_field = None
+        for _field in p_src_fields:
+            if _field in _field_map.values()
+                pref_p_field = _field_map.inverse[_field]
+
+        label = """Ecowitt gateways/consoles support both traditional 
+tipping and piezoelectric rainfall gauges. Consequently, the HTTP driver 
+can populate the WeeWX field 'rain' from either a traditional rainfall
+gauge or a piezoelectric rainfall gauge. Set to 'traditional' to 
+populate WeeWX field 'rain' from a paired traditional rainfall gauge
+or 'piezo' to populate WeeWX field 'rain' from a paired piezoelectric 
+rainfall gauge."""
+        print()
+        _rain_source = weecfg.prompt_with_options(label, source, ['traditional', 'piezo']).lower()
+        if _rain_source.lower() == 'traditional':
+            # we are using a traditional rainfall gauge
+            t_label = """Select the WeeWX field to be used to derive WeeWX field 'rain'."""
+            print()
+            t_fields = ['%s' % _field_map.inverse[f] for f in t_src_fields if f in _field_map.values()]
+            prompt = ','.join(t_fields)
+            _rain_field = weecfg.prompt_with_options(t_label, curr_rain_src, prompt).lower()
+        elif _rain_source.lower() == 'piezo':
+            # we are using a piezo rainfall gauge
+            p_label = """Select the WeeWX field to be used to derive WeeWX field 'rain'."""
+            print()
+            p_fields = ['%s' % _field_map.inverse[f] for f in p_src_fields if f in _field_map.values()]
+            prompt = ','.join(p_fields)
+            _rain_field = weecfg.prompt_with_options(p_label, curr_rain_src, prompt).lower()
+        _rain_source_config = """
+[StdWXCalculate]
+    [[Calculations]]
+        rain = prefer_hardware
+    [[Deltas]]
+        [[[rain]]]
+            input = %s"""
+        _rain_source_dict = configobj.ConfigObj(io.StringIO(_rain_source_config % (_rain_field,)))
+        config_dict.merge(_rain_source_dict)
+        print()
+
+        # set lightning_strike_count
+        print("""Setting lightning_strike_count calculation.""")
+        lightning_config_str = """
+        [StdWXCalculate]
+            [[Calculations]]
+                lightning_strike_count = prefer_hardware
+            [[Deltas]]
+                [[[lightning_strike_count]]]
+                    input = lightningcount"""
+        lightning_config = configobj.ConfigObj(io.StringIO(lightning_config_str))
+        config_dict.merge(lightning_config)
         print()
 
         # set record generation to software
