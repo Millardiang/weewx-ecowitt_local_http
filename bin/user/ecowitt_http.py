@@ -131,7 +131,7 @@ log = logging.getLogger(__name__)
 
 
 DRIVER_NAME = 'EcowittHttp'
-DRIVER_VERSION = '0.1.0a19'
+DRIVER_VERSION = '0.1.0a20'
 
 # device models that are supported by the driver
 SUPPORTED_DEVICES = ('GW1100', 'GW1200', 'GW2000',
@@ -2666,11 +2666,10 @@ class EcowittHttpDriverConfEditor(weewx.drivers.AbstractConfEditor):
         # to 1 (enabled)
         default = config_dict.get('loop_on_init', '1')
         # construct the prompt text
-        prompt = """The Ecowitt HTTP driver requires a network 
-connection to the device. Consequently, the absence of a network 
-connection when WeeWX starts will cause WeeWX to exit. The 
-'loop_on_init' setting can be used to mitigate such problems by 
-having WeeWX retry startup indefinitely. Set to '0' to attempt 
+        prompt = """The Ecowitt HTTP driver requires a network connection to the device.
+Consequently, the absence of a network connection when WeeWX starts will cause
+WeeWX to exit. The WeeWX 'loop_on_init' setting can be used to mitigate such
+problems by having WeeWX retry startup indefinitely. Set to '0' to attempt
 startup once only or '1' to attempt startup indefinitely."""
         print()
         # obtain the user loop_on_init setting, coerce to an integer
@@ -2678,7 +2677,7 @@ startup once only or '1' to attempt startup indefinitely."""
         # define the loop_on_init template string
         loop_on_init_config_str = f'loop_on_init = {loop_on_init:d}'
         # convert the loop_on_init config to a ConfigObj
-        loop_on_init_dict = configobj.ConfigObj(io.StringIO(loop_on_init_config_str % (loop_on_init,)))
+        loop_on_init_dict = configobj.ConfigObj(io.StringIO(loop_on_init_config_str))
         # merge the loop_on_init config into our overall config
         config_dict.merge(loop_on_init_dict)
         # if we don't have any loop_on_init comments add a brief explanatory
@@ -4368,7 +4367,7 @@ class EcowittHttpDriver(weewx.drivers.AbstractDevice, EcowittCommon):
         # save the catchup settings
         catchup_dict = stn_dict.get('catchup', dict())
         # the source
-        self.catchup_source = catchup_dict.get('catchup_source')
+        self.catchup_source = catchup_dict.get('source')
         # the grace period applied to any catchup record timestamps
         self.catchup_grace = weeutil.weeutil.to_int(catchup_dict.get('grace',
                                                                      DEFAULT_CATCHUP_GRACE))
@@ -4669,6 +4668,7 @@ class EcowittHttpDriver(weewx.drivers.AbstractDevice, EcowittCommon):
         """
 
         if self.catchup_source is None or self.catchup_source.lower() in ('either', 'both'):
+            print("self.catchup_source=%s" % self.catchup_source)
             # no catchup source was specified, so first try to obtain a device
             # 'catchup' object
             try:
