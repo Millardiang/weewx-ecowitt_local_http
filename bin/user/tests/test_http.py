@@ -24,17 +24,18 @@ To run the test suite:
     PYTHONPATH=/home/weewx/weewx-data/bin:/home/weewx/weewx/src python3 -m user.tests.test_http
 '''
 # python imports
+import io
 import socket
 import struct
 import unittest
 
-from io import StringIO
 from unittest.mock import patch
 
 import configobj
 
 # WeeWX imports
 import weewx
+import schemas.wview_extended
 import weewx.units
 import user.ecowitt_http
 
@@ -95,7 +96,7 @@ class DebugOptionsTestCase(unittest.TestCase):
 
         # construct a debug option config that sets all available debug options
         debug_string = 'debug = %s' % ', '.join(self.debug_groups)
-        self.debug_config = configobj.ConfigObj(StringIO(debug_string))
+        self.debug_config = configobj.ConfigObj(io.StringIO(debug_string))
 
     def test_constants(self):
         '''Test constants used by DebugOptions.'''
@@ -177,7 +178,7 @@ class DebugOptionsTestCase(unittest.TestCase):
             # create a string contsaining the debug groups to be set
             debug_string = 'debug = %s' % ', '.join(all_groups)
             # convert to a configobj
-            _config = configobj.ConfigObj(StringIO(debug_string))
+            _config = configobj.ConfigObj(io.StringIO(debug_string))
             # get a fresh DebugOptions object using the config
             debug_options = user.ecowitt_http.DebugOptions(**_config)
             # now check the DebugOptions object properties are set as expected
@@ -190,6 +191,22 @@ class DebugOptionsTestCase(unittest.TestCase):
                     self.assertTrue(getattr(debug_options, group))
             # check 'any' property, it should be True
             self.assertTrue(debug_options.any)
+
+class ConfEditorTestCase(unittest.TestCase):
+    """Test the EcowittHttpDriverConfEditor class."""
+
+    def test_accumulator_config(self):
+        """Test conf editor accumulator config."""
+
+        schema_fields = [f[0] for f in schemas.wview_extended.table]
+        mapper = user.ecowitt_http.HttpMapper()
+        driver_fields = mapper.field_map.keys()
+        default_accum_fields = set(schema_fields) | set(driver_fields)
+        accum_config_dict = configobj.ConfigObj(io.StringIO(user.ecowitt_http.EcowittHttpDriverConfEditor.accum_config_str))
+        accum_config_dict_fields = accum_config_dict['Accumulator'].sections
+        # now get the field map from the mapper
+        for weewx_field in default_accum_fields:
+            self.assertIn(weewx_field, accum_config_dict_fields)
 
 
 class DeviceCatchupTestCase(unittest.TestCase):
@@ -1587,7 +1604,7 @@ def main():
     #               GatewayServiceTestCase, GatewayDriverTestCase)
     test_cases = (DebugOptionsTestCase, HttpParserTestCase,
                   EcowittSensorsTestCase, UtilitiesTestCase,
-                  DeviceCatchupTestCase) #SensorsTestCase, HttpParserTestCase,
+                  DeviceCatchupTestCase, ConfEditorTestCase) #SensorsTestCase, HttpParserTestCase,
 #                  ListsAndDictsTestCase, StationTestCase,
 #                  GatewayServiceTestCase, GatewayDriverTestCase)
 
