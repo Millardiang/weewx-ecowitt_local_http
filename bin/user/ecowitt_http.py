@@ -131,7 +131,7 @@ log = logging.getLogger(__name__)
 
 
 DRIVER_NAME = 'EcowittHttp'
-DRIVER_VERSION = '0.1.0a20'
+DRIVER_VERSION = '0.1.0a21'
 
 # device models that are supported by the driver
 SUPPORTED_DEVICES = ('GW1100', 'GW1200', 'GW2000',
@@ -1069,9 +1069,7 @@ class HttpMapper(FieldMapper):
         'p_rainday': 'piezoRain.0x10.val',
         'p_rainweek': 'piezoRain.0x11.val',
         'p_rainmonth': 'piezoRain.0x12.val',
-        'p_rainyear': 'piezoRain.0x13.val',
-        'rain': 't_rain',
-        'p_rain': 'p_rain'
+        'p_rainyear': 'piezoRain.0x13.val'
     }
     # modular wind map
     default_wind_map = {
@@ -2269,41 +2267,35 @@ class EcowittHttpDriverConfEditor(weewx.drivers.AbstractConfEditor):
             extractor = sum
         [[lightning_last_det_time]]
             extractor = last
-        [[stormRain]]
+        [[t_rainevent]]
             extractor = last
-        [[dayRain]]
+        [[t_rainhour]]
             extractor = last
-        [[weekRain]]
-            extractor = last
-        [[monthRain]]
-            extractor = last
-        [[yearRain]]
-            extractor = last
-        [[totalRain]]
-            extractor = last
-        [[t_rain]]
-            extractor = sum
         [[t_stormRain]]
             extractor = last
-        [[t_dayRain]]
+        [[t_rainday]]
             extractor = last
-        [[t_weekRain]]
+        [[t_rainweek]]
             extractor = last
-        [[t_monthRain]]
+        [[t_rainmonth]]
             extractor = last
-        [[t_yearRain]]
+        [[t_rainyear]]
             extractor = last
-        [[p_rain]]
-            extractor = sum
+        [[p_rainevent]]
+            extractor = last
+        [[p_rainhour]]
+            extractor = last
         [[p_stormRain]]
             extractor = last
-        [[p_dayRain]]
+        [[p_rainday]]
             extractor = last
-        [[p_weekRain]]
+        [[p_rainweek]]
             extractor = last
-        [[p_monthRain]]
+        [[p_rainmonth]]
             extractor = last
-        [[p_yearRain]]
+        [[p_rainyear]]
+            extractor = last
+        [[is_raining]]
             extractor = last
         [[pm2_51_24h_avg]]
             extractor = last
@@ -2442,6 +2434,8 @@ class EcowittHttpDriverConfEditor(weewx.drivers.AbstractConfEditor):
         [[wh68_batt]]
             extractor = last
         [[ws80_batt]]
+            extractor = last
+        [[ws90_batt]]
             extractor = last
         [[wh40_sig]]
             extractor = last
