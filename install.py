@@ -42,7 +42,306 @@ ecowitt_config = """
 [Accumulator]
 
     # Start Ecowitt local HTTP API driver extractors
-
+    [[daymaxwind]]
+        extractor = last
+    [[lightning_distance]]
+        extractor = last
+    [[lightning_strike_count]]
+        extractor = sum
+    [[lightning_last_det_time]]
+        extractor = last
+    [[t_rainevent]]
+        extractor = last
+    [[t_rainhour]]
+        extractor = last
+    [[t_stormRain]]
+        extractor = last
+    [[t_rainday]]
+        extractor = last
+    [[t_rainweek]]
+        extractor = last
+    [[t_rainmonth]]
+        extractor = last
+    [[t_rainyear]]
+        extractor = last
+    [[p_rainevent]]
+        extractor = last
+    [[p_rainhour]]
+        extractor = last
+    [[p_stormRain]]
+        extractor = last
+    [[p_rainday]]
+        extractor = last
+    [[p_rainweek]]
+        extractor = last
+    [[p_rainmonth]]
+        extractor = last
+    [[p_rainyear]]
+        extractor = last
+    [[is_raining]]
+        extractor = last
+    [[pm2_51_24h_avg]]
+        extractor = last
+    [[pm2_52_24h_avg]]
+        extractor = last
+    [[pm2_53_24h_avg]]
+        extractor = last
+    [[pm2_54_24h_avg]]
+        extractor = last
+    [[pm2_55_24h_avg]]
+        extractor = last
+    [[pm10_24h_avg]]
+        extractor = last
+    [[co2_24h_avg]]
+        extractor = last
+    [[heap_free]]
+        extractor = last
+    [[wh40_batt]]
+        extractor = last
+    [[wh26_batt]]
+        extractor = last
+    [[wh25_batt]]
+        extractor = last
+    [[wh65_batt]]
+        extractor = last
+    [[wn32_batt]]
+        extractor = last
+    [[wn31_ch1_batt]]
+        extractor = last
+    [[wn31_ch2_batt]]
+        extractor = last
+    [[wn31_ch3_batt]]
+        extractor = last
+    [[wn31_ch4_batt]]
+        extractor = last
+    [[wn31_ch5_batt]]
+        extractor = last
+    [[wn31_ch6_batt]]
+        extractor = last
+    [[wn31_ch7_batt]]
+        extractor = last
+    [[wn31_ch8_batt]]
+        extractor = last
+    [[wn34_ch1_batt]]
+        extractor = last
+    [[wn34_ch2_batt]]
+        extractor = last
+    [[wn34_ch3_batt]]
+        extractor = last
+    [[wn34_ch4_batt]]
+        extractor = last
+    [[wn34_ch5_batt]]
+        extractor = last
+    [[wn34_ch6_batt]]
+        extractor = last
+    [[wn34_ch7_batt]]
+        extractor = last
+    [[wn34_ch8_batt]]
+        extractor = last
+    [[wn35_ch1_batt]]
+        extractor = last
+    [[wn35_ch2_batt]]
+        extractor = last
+    [[wn35_ch3_batt]]
+        extractor = last
+    [[wn35_ch4_batt]]
+        extractor = last
+    [[wn35_ch5_batt]]
+        extractor = last
+    [[wn35_ch6_batt]]
+        extractor = last
+    [[wn35_ch7_batt]]
+        extractor = last
+    [[wn35_ch8_batt]]
+        extractor = last
+    [[wh41_ch1_batt]]
+        extractor = last
+    [[wh41_ch2_batt]]
+        extractor = last
+    [[wh41_ch3_batt]]
+        extractor = last
+    [[wh41_ch4_batt]]
+        extractor = last
+    [[wh45_batt]]
+        extractor = last
+    [[wh51_ch1_batt]]
+        extractor = last
+    [[wh51_ch2_batt]]
+        extractor = last
+    [[wh51_ch3_batt]]
+        extractor = last
+    [[wh51_ch4_batt]]
+        extractor = last
+    [[wh51_ch5_batt]]
+        extractor = last
+    [[wh51_ch6_batt]]
+        extractor = last
+    [[wh51_ch7_batt]]
+        extractor = last
+    [[wh51_ch8_batt]]
+        extractor = last
+    [[wh51_ch9_batt]]
+        extractor = last
+    [[wh51_ch10_batt]]
+        extractor = last
+    [[wh51_ch11_batt]]
+        extractor = last
+    [[wh51_ch12_batt]]
+        extractor = last
+    [[wh51_ch13_batt]]
+        extractor = last
+    [[wh51_ch14_batt]]
+        extractor = last
+    [[wh51_ch15_batt]]
+        extractor = last
+    [[wh51_ch16_batt]]
+        extractor = last
+    [[wh54_ch1_batt]]
+        extractor = last
+    [[wh54_ch2_batt]]
+        extractor = last
+    [[wh54_ch3_batt]]
+        extractor = last
+    [[wh54_ch4_batt]]
+        extractor = last
+    [[wh55_ch1_batt]]
+        extractor = last
+    [[wh55_ch2_batt]]
+        extractor = last
+    [[wh55_ch3_batt]]
+        extractor = last
+    [[wh55_ch4_batt]]
+        extractor = last
+    [[wh57_batt]]
+        extractor = last
+    [[wh68_batt]]
+        extractor = last
+    [[ws80_batt]]
+        extractor = last
+    [[ws90_batt]]
+        extractor = last
+    [[wh40_sig]]
+        extractor = last
+    [[wh26_sig]]
+        extractor = last
+    [[wh25_sig]]
+        extractor = last
+    [[wh65_sig]]
+        extractor = last
+    [[wn32_sig]]
+        extractor = last
+    [[wn31_ch1_sig]]
+        extractor = last
+    [[wn31_ch2_sig]]
+        extractor = last
+    [[wn31_ch3_sig]]
+        extractor = last
+    [[wn31_ch4_sig]]
+        extractor = last
+    [[wn31_ch5_sig]]
+        extractor = last
+    [[wn31_ch6_sig]]
+        extractor = last
+    [[wn31_ch7_sig]]
+        extractor = last
+    [[wn31_ch8_sig]]
+        extractor = last
+    [[wn34_ch1_sig]]
+        extractor = last
+    [[wn34_ch2_sig]]
+        extractor = last
+    [[wn34_ch3_sig]]
+        extractor = last
+    [[wn34_ch4_sig]]
+        extractor = last
+    [[wn34_ch5_sig]]
+        extractor = last
+    [[wn34_ch6_sig]]
+        extractor = last
+    [[wn34_ch7_sig]]
+        extractor = last
+    [[wn34_ch8_sig]]
+        extractor = last
+    [[wn35_ch1_sig]]
+        extractor = last
+    [[wn35_ch2_sig]]
+        extractor = last
+    [[wn35_ch3_sig]]
+        extractor = last
+    [[wn35_ch4_sig]]
+        extractor = last
+    [[wn35_ch5_sig]]
+        extractor = last
+    [[wn35_ch6_sig]]
+        extractor = last
+    [[wn35_ch7_sig]]
+        extractor = last
+    [[wn35_ch8_sig]]
+        extractor = last
+    [[wh41_ch1_sig]]
+        extractor = last
+    [[wh41_ch2_sig]]
+        extractor = last
+    [[wh41_ch3_sig]]
+        extractor = last
+    [[wh41_ch4_sig]]
+        extractor = last
+    [[wh45_sig]]
+        extractor = last
+    [[wh51_ch1_sig]]
+        extractor = last
+    [[wh51_ch2_sig]]
+        extractor = last
+    [[wh51_ch3_sig]]
+        extractor = last
+    [[wh51_ch4_sig]]
+        extractor = last
+    [[wh51_ch5_sig]]
+        extractor = last
+    [[wh51_ch6_sig]]
+        extractor = last
+    [[wh51_ch7_sig]]
+        extractor = last
+    [[wh51_ch8_sig]]
+        extractor = last
+    [[wh51_ch9_sig]]
+        extractor = last
+    [[wh51_ch10_sig]]
+        extractor = last
+    [[wh51_ch11_sig]]
+        extractor = last
+    [[wh51_ch12_sig]]
+        extractor = last
+    [[wh51_ch13_sig]]
+        extractor = last
+    [[wh51_ch14_sig]]
+        extractor = last
+    [[wh51_ch15_sig]]
+        extractor = last
+    [[wh51_ch16_sig]]
+        extractor = last
+    [[wh54_ch1_sig]]
+        extractor = last
+    [[wh54_ch2_sig]]
+        extractor = last
+    [[wh54_ch3_sig]]
+        extractor = last
+    [[wh54_ch4_sig]]
+        extractor = last
+    [[wh55_ch1_sig]]
+        extractor = last
+    [[wh55_ch2_sig]]
+        extractor = last
+    [[wh55_ch3_sig]]
+        extractor = last
+    [[wh55_ch4_sig]]
+        extractor = last
+    [[wh57_sig]]
+        extractor = last
+    [[wh68_sig]]
+        extractor = last
+    [[ws80_sig]]
+        extractor = last
     # End Ecowitt local HTTP API driver extractors
 """
 
