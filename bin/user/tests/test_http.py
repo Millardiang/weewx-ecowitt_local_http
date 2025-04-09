@@ -1,17 +1,17 @@
 '''
 Test suite for the WeeWX Ecowitt gateway driver.
 
-Copyright (C) 2020-24 Gary Roderick                gjroderick<at>gmail.com
+Copyright (C) 2020-25 Gary Roderick                gjroderick<at>gmail.com
 
 A python3 unittest based test suite for aspects of the Ecowitt gateway driver.
 The test suite tests correct operation of:
 
 -
 
-Version: 0.1.0a18                                 Date: ? August 2024
+Version: 0.1.0a21                                 Date: ? April 2025
 
 Revision History
-    ?? August 2024      v0.1.0
+    ?? April 2025       v0.1.0
         -   initial release
 
 To run the test suite:
@@ -191,6 +191,7 @@ class DebugOptionsTestCase(unittest.TestCase):
                     self.assertTrue(getattr(debug_options, group))
             # check 'any' property, it should be True
             self.assertTrue(debug_options.any)
+
 
 class ConfEditorTestCase(unittest.TestCase):
     """Test the EcowittHttpDriverConfEditor class."""

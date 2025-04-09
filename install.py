@@ -10,10 +10,10 @@ PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
                  Installer for Ecowitt Local HTTP API Driver
 
-Version: 0.1.0a1                                       Date: xx March 2025
+Version: 0.1.0a21                                       Date: xx April 2025
 
 Revision History
-    xx March 2025      v0.1.0
+    xx April 2025      v0.1.0
         -   initial implementation
 """
 
