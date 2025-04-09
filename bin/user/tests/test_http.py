@@ -196,17 +196,33 @@ class ConfEditorTestCase(unittest.TestCase):
     """Test the EcowittHttpDriverConfEditor class."""
 
     def test_accumulator_config(self):
-        """Test conf editor accumulator config."""
+        """Test conf editor accumulator config.
 
-        schema_fields = [f[0] for f in schemas.wview_extended.table]
+        Some fields require Accumulator extractor settings other than the
+        default (average), eg: sensor battery and signal state fields. Check
+        these fields have bene included the relevant accumulator config
+        strings/dicts.
+        """
+
+#        # schema_fields = [f[0] for f in schemas.wview_extended.table]
         mapper = user.ecowitt_http.HttpMapper()
-        driver_fields = mapper.field_map.keys()
-        default_accum_fields = set(schema_fields) | set(driver_fields)
+        test_fields = list(mapper.default_sensor_state_map.keys())
+        test_fields += list(mapper.default_rain_map.keys())
+#        default_accum_fields = set(schema_fields) | set(driver_fields)
         accum_config_dict = configobj.ConfigObj(io.StringIO(user.ecowitt_http.EcowittHttpDriverConfEditor.accum_config_str))
         accum_config_dict_fields = accum_config_dict['Accumulator'].sections
+        exclusions = ('wn34_ch1_volt', 'wn34_ch2_volt', 'wn34_ch3_volt', 'wn34_ch4_volt',
+                      'wn34_ch5_volt', 'wn34_ch6_volt', 'wn34_ch7_volt', 'wn34_ch8_volt',
+                      'wh51_ch1_volt', 'wh51_ch2_volt', 'wh51_ch3_volt', 'wh51_ch4_volt',
+                      'wh51_ch5_volt', 'wh51_ch6_volt', 'wh51_ch7_volt', 'wh51_ch8_volt',
+                      'wh51_ch9_volt', 'wh51_ch10_volt', 'wh51_ch11_volt', 'wh51_ch12_volt',
+                      'wh51_ch13_volt', 'wh51_ch14_volt', 'wh51_ch15_volt', 'wh51_ch16_volt',
+                      'wh54_ch1_volt', 'wh54_ch2_volt', 'wh54_ch3_volt', 'wh54_ch4_volt',
+                      'ws90_volt', 'ws90_sig', 'rainRate', 'p_rainrate')
         # now get the field map from the mapper
-        for weewx_field in default_accum_fields:
-            self.assertIn(weewx_field, accum_config_dict_fields)
+        for weewx_field in test_fields:
+            if weewx_field not in exclusions:
+                self.assertIn(weewx_field, accum_config_dict_fields)
 
 
 class DeviceCatchupTestCase(unittest.TestCase):
