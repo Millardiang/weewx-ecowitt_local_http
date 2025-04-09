@@ -27,7 +27,7 @@ import weewx
 
 
 REQUIRED_WEEWX_VERSION = "5.0.0"
-DRIVER_VERSION = "0.1.0a19"
+DRIVER_VERSION = "0.1.0a21"
 # define our config as a multiline string so we can preserve comments
 ecowitt_config = """
 [EcowittHttp]
