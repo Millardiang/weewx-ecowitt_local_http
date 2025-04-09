@@ -2806,7 +2806,7 @@ connected."""
                 options = ' or '.join([_first, _fields[-1]])
             # construct the prompt text to use
             field_prompt = f"""Select the WeeWX field to be used to derive WeeWX field 'rain'. Possible fields
-    are {options}."""
+are {options}."""
             print()
             # obtain the user rain source field selection
             rain_source_field = weecfg.prompt_with_options(field_prompt, default_source, options)
@@ -2823,8 +2823,20 @@ connected."""
             # merge the rain config into our overall config
             config_dict.merge(_rain_config_dict)
         else:
-            # no rainfall gauge is connected
-            pass
+            # no rainfall gauge is connected, all we need do is remove any
+            # (now) unused [StdWXCalculate] config stanzas/options
+            # do we have a [[Deltas]] [[[rain]]], if so remove it
+            if 'rain' in config_dict['StdWXCalculate'].get('Deltas', {}):
+                # we have a [[[rain]]] stanza, we can safely delete it
+                _ = config_dict['StdWXCalculate']['Deltas'].pop('rain')
+                # if [[[rain]]] was the only [[Deltas]] key we can delete
+                # [[Deltas]] as well
+                if len(config_dict['StdWXCalculate']['Deltas']) == 0:
+                    _ = config_dict['StdWXCalculate'].pop('Deltas')
+            # do we have a [[Calculation]] 'rain' entry, if so remove it
+            if 'rain' in config_dict['StdWXCalculate'].get('Calculations', {}):
+                # we have a 'rain' config entry, we can safely delete it
+                _ = config_dict['StdWXCalculate']['Calculations'].pop('rain')
         print()
 
         # set lightning_strike_count
