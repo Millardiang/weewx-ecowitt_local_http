@@ -39,6 +39,18 @@ ecowitt_config = """
     # The driver to use:
     driver = user.ecowitt_http
     
+[StdWXCalculate]
+
+    [[Calculations]]
+        t_rain = prefer_hardware
+        p_rain = prefer_hardware
+        
+    [[Deltas]]
+        [[[t_rain]]]
+            input = t_rainyear
+        [[[p_rain]]]
+            input = p_rainyear
+            
 [Accumulator]
 
     # Start Ecowitt local HTTP API driver extractors
