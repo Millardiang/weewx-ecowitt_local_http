@@ -62,6 +62,8 @@ ecowitt_config = """
         extractor = sum
     [[lightning_last_det_time]]
         extractor = last
+    [[t_rain]]
+        extractor = sum
     [[t_rainevent]]
         extractor = last
     [[t_rainhour]]
@@ -76,6 +78,8 @@ ecowitt_config = """
         extractor = last
     [[t_rainyear]]
         extractor = last
+    [[p_rain]]
+        extractor = sum
     [[p_rainevent]]
         extractor = last
     [[p_rainhour]]
