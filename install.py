@@ -10,7 +10,7 @@ PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
                  Installer for Ecowitt Local HTTP API Driver
 
-Version: 0.1.0a22                                       Date: xx April 2025
+Version: 0.1.0a23                                       Date: xx April 2025
 
 Revision History
     xx April 2025      v0.1.0
@@ -27,7 +27,7 @@ import weewx
 
 
 REQUIRED_WEEWX_VERSION = "5.0.0"
-DRIVER_VERSION = "0.1.0a22"
+DRIVER_VERSION = "0.1.0a23"
 # define our config as a multiline string so we can preserve comments
 ecowitt_config = """
 [EcowittHttp]
@@ -45,7 +45,7 @@ ecowitt_config = """
         t_rain = prefer_hardware
         p_rain = prefer_hardware
         
-    [[Deltas]]
+    [[Delta]]
         [[[t_rain]]]
             input = t_rainyear
         [[[p_rain]]]
