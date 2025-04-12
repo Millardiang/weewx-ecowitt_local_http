@@ -45,7 +45,7 @@ ecowitt_config = """
         t_rain = prefer_hardware
         p_rain = prefer_hardware
         
-    [[Deltas]]
+    [[Delta]]
         [[[t_rain]]]
             input = t_rainyear
         [[[p_rain]]]

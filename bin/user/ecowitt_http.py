@@ -2507,8 +2507,8 @@ startup once only or '1' to attempt startup indefinitely."""
         # get the field map from the mapper, but convert it to an InvertibleMap
         # so we can look up both 'keys' and 'values'
         _field_map = InvertibleMap(_mapper.field_map)
-        # obtain the current [StdWXCalculate] [[Deltas]] config if it exists
-        _deltas_config_dict = config_dict['StdWXCalculate'].get('Deltas', {})
+        # obtain the current [StdWXCalculate] [[Delta]] config if it exists
+        _deltas_config_dict = config_dict['StdWXCalculate'].get('Delta', {})
         # get the WeeWX field currently used as the 'rain' 'input' field, if
         # there isn't one then use None
         curr_rain_w_src = _deltas_config_dict['rain'].get('input') if 'rain' in _deltas_config_dict else None
@@ -2669,7 +2669,7 @@ are {options}."""
                 [StdWXCalculate]
                     [[Calculations]]
                         rain = prefer_hardware
-                    [[Deltas]]
+                    [[Delta]]
                         [[[rain]]]
                             input = {rain_source_field}"""
             # convert the rain config string to a ConfigObj
@@ -2694,7 +2694,7 @@ are {options}."""
                     [StdWXCalculate]
                         [[Calculations]]
                             {add_back} = prefer_hardware
-                        [[Deltas]]
+                        [[Delta]]
                             [[[{add_back}]]]
                                 input = {add_back}year"""
                 # merge the 'add back' config into our rain config
@@ -2705,10 +2705,10 @@ are {options}."""
             # finally we need to remove any [StdWXCalculate] entries for
             # default rain field ('t_rain' or 'p_rain') that has now been
             # replaced with WeeWX field 'rain'
-            # first remove any [[Deltas]] entry that exists
-            if rain_field in config_dict['StdWXCalculate'].get('Deltas', {}):
+            # first remove any [[Delta]] entry that exists
+            if rain_field in config_dict['StdWXCalculate'].get('Delta', {}):
                 # we have a [[[]]] stanza for our field, we need to delete it
-                _ = config_dict['StdWXCalculate']['Deltas'].pop(rain_field)
+                _ = config_dict['StdWXCalculate']['Delta'].pop(rain_field)
             # now check to see if there is a corresponding [[Calculations]]
             # entry, if there is remove it
             if rain_field in config_dict['StdWXCalculate'].get('Calculations', {}):
@@ -2718,10 +2718,10 @@ are {options}."""
             # no rainfall gauge was selected, all we need do is remove any
             # (now) unused [StdWXCalculate] config stanzas/options
 
-            # do we have a [[Deltas]] [[[rain]]], if so remove it
-            if 'rain' in config_dict['StdWXCalculate'].get('Deltas', {}):
+            # do we have a [[Delta]] [[[rain]]], if so remove it
+            if 'rain' in config_dict['StdWXCalculate'].get('Delta', {}):
                 # we have a [[[rain]]] stanza, we can safely delete it
-                _ = config_dict['StdWXCalculate']['Deltas'].pop('rain')
+                _ = config_dict['StdWXCalculate']['Delta'].pop('rain')
             # do we have a [[Calculation]] 'rain' entry, if so remove it
             if 'rain' in config_dict['StdWXCalculate'].get('Calculations', {}):
                 # we have a 'rain' config entry, we can safely delete it
@@ -2735,7 +2735,7 @@ are {options}."""
                     [StdWXCalculate]
                         [[Calculations]]
                             {curr_gauge_type[0]}_rain = prefer_hardware
-                        [[Deltas]]
+                        [[Delta]]
                             [[[{curr_gauge_type[0]}_rain]]]
                                 input = {curr_gauge_type[0]}_rainyear"""
                 # convert the rain config string to a ConfigObj
@@ -2753,10 +2753,10 @@ are {options}."""
                 # [[field_map_extensions]] stanza
                 if len(config_dict['EcowittHttp']['field_map_extensions']) == 0:
                     _ = config_dict['EcowittHttp'].pop('field_map_extensions')
-        # finally, if we have ended up with no [StdWXCalculate] [[Deltas]]
-        # entries we can safely delete the entire [[Deltas]] stanza
-        if len(config_dict['StdWXCalculate']['Deltas']) == 0:
-            _ = config_dict['StdWXCalculate'].pop('Deltas')
+        # finally, if we have ended up with no [StdWXCalculate] [[Delta]]
+        # entries we can safely delete the entire [[Delta]] stanza
+        if len(config_dict['StdWXCalculate']['Delta']) == 0:
+            _ = config_dict['StdWXCalculate'].pop('Delta')
 
 
     @staticmethod
@@ -2776,7 +2776,7 @@ are {options}."""
         [StdWXCalculate]
             [[Calculations]]
                 lightning_strike_count = prefer_hardware
-            [[Deltas]]
+            [[Delta]]
                 [[[lightning_strike_count]]]
                     input = lightningcount"""
         # convert the lightning strike count config string to a ConfigObj
