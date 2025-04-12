@@ -4628,7 +4628,6 @@ class EcowittHttpDriver(weewx.drivers.AbstractDevice, EcowittCommon):
         """
 
         if self.catchup_source is None or self.catchup_source.lower() in ('either', 'both'):
-            print("self.catchup_source=%s" % self.catchup_source)
             # no catchup source was specified, so first try to obtain a device
             # 'catchup' object
             try:
@@ -5060,7 +5059,6 @@ class EcowittHttpApi:
             # rather than using the Request object's 'data' parameter so the
             # request is sent as a GET request rather than a POST request.
             full_url = '?'.join([url, data_enc])
-            log.info("full_url=%s" %  full_url)
             # create a Request object
             req = urllib.request.Request(url=full_url, headers=headers_dict)
             for attempt in range(self.max_tries):
