@@ -2067,6 +2067,8 @@ class EcowittHttpDriverConfEditor(weewx.drivers.AbstractConfEditor):
             extractor = sum
         [[lightning_last_det_time]]
             extractor = last
+        [[t_rain]]
+            extractor = sum
         [[t_rainevent]]
             extractor = last
         [[t_rainhour]]
@@ -2081,6 +2083,8 @@ class EcowittHttpDriverConfEditor(weewx.drivers.AbstractConfEditor):
             extractor = last
         [[t_rainyear]]
             extractor = last
+        [[p_rain]]
+            extractor = sum
         [[p_rainevent]]
             extractor = last
         [[p_rainhour]]
@@ -2506,11 +2510,6 @@ startup once only or '1' to attempt startup indefinitely."""
         # the 'rain' 'input' field, if there isn't such a WeeWX field then use
         # None
         curr_rain_e_src = _field_map.get(curr_rain_w_src) if curr_rain_w_src is not None else None
-        # get the WeeWX fields used for tipping and piezo rain rates, by
-        # default this is 't_rain_rate' and 'p_rainrate' respectively, but the
-        # user could have changed them
-        t_rate_field = _field_map.inverse.get('rain.0x0E.val')
-        p_rate_field = _field_map.inverse.get('piezoRain.0x0E.val')
         # Determine the rain gauge type in use, it will be either 'tipping'
         # or 'piezo'. If we can't determine the type then use None
         curr_gauge_type = 'none'
@@ -2558,13 +2557,12 @@ gauge. Set to 'tipping' to populate the WeeWX rain fields from a paired tipping
 gauge, 'piezo' to populate the WeeWX rain fields from a paired piezoelectric
 gauge or 'none' to not populate the WeeWX rain fields or if no rainfall gauge
 is paired."""
-#        # determine the default gauge type to be offered, it will be the
-#        # current in-use gauge type, of it there isn't one 'tipping'
-#        default = curr_gauge_type if curr_gauge_type is not None else 'tipping'
         # obtain the user rain gauge type being used
         _gauge_type = weecfg.prompt_with_options(prompt, curr_gauge_type, ['tipping', 'piezo', 'none']).lower()
         # given the rain gauge type selected obtain the source field to be used
         # to calculate WeeWX field 'rain'
+        rate_field = None
+        add_back = None
         if _gauge_type in ('tipping', 'piezo'):
             if _gauge_type.lower() == 'tipping':
                 # a tipping rainfall gauge was chosen
@@ -2577,12 +2575,18 @@ is paired."""
                     default_source =  curr_rain_w_src if curr_rain_w_src is not None else pref_t_field
                 else:
                     default_source = pref_t_field
+                    add_back = 'p_rain'
                 # construct a string listing the available WeeWX tipping
                 # cumulative rain fields, the available fields consist of those
                 # fields in our tipping source field list that exist in the
                 # field map
                 _fields = [_field_map.inverse[f] for f in EcowittHttpDriverConfEditor.t_src_fields
                             if f in _field_map.values()]
+                # set the
+                rain_field = 't_rain'
+                # set the rain rate source field being used, it will be the
+                # tipping rain rate
+                rate_field = 'rain.0x0E.val'
             elif _gauge_type.lower() == 'piezo':
                 # a tipping rainfall gauge was chosen
                 # Get the default WeeWX source field, it is the WeeWX field
@@ -2594,10 +2598,16 @@ is paired."""
                     default_source =  curr_rain_w_src if curr_rain_w_src is not None else pref_p_field
                 else:
                     default_source = pref_p_field
+                    add_back = 't_rain'
                 # construct a string listing the available WeeWX piezo cumulative
                 # rain fields
                 _fields = [_field_map.inverse[f] for f in EcowittHttpDriverConfEditor.p_src_fields
                             if f in _field_map.values()]
+                # set the
+                rain_field = 'p_rain'
+                # set the rain rate source field being used, it will be the
+                # piezo rain rate
+                rate_field = 'piezoRain.0x0E.val'
             # now produce a string consisting of a comma separated list of
             # available WeeWX fields
             if len(_fields) == 1:
@@ -2614,35 +2624,46 @@ are {options}."""
             print()
             # obtain the user rain source field selection
             rain_source_field = weecfg.prompt_with_options(field_prompt, default_source, options)
-            # define the rain config template string
+            # define the rain config template string, we will include our rain
+            # rate config string so we can do just a single convert/merge
             _rain_config_str = f"""
-    [StdWXCalculate]
-        [[Calculations]]
-            rain = prefer_hardware
-        [[Deltas]]
-            [[[rain]]]
-                input = {rain_source_field}"""
+                [StdWXCalculate]
+                    [[Calculations]]
+                        rain = prefer_hardware
+                    [[Deltas]]
+                        [[[rain]]]
+                            input = {rain_source_field}"""
             # convert the rain config string to a ConfigObj
             _rain_config_dict = configobj.ConfigObj(io.StringIO(_rain_config_str))
+            # define the config string we need to set the correct rain rate
+            # mapping
+            if rate_field is not None:
+                _rate_config_str = f"""
+                    [EcowittHttp]
+                        [[field_map_extensions]]
+                            rainRate = {rate_field}"""
+                _rain_config_dict.merge(configobj.ConfigObj(io.StringIO(_rate_config_str)))
+            if add_back is not None:
+                _change_config_str = f"""
+                    [StdWXCalculate]
+                        [[Calculations]]
+                            {add_back} = prefer_hardware
+                        [[Deltas]]
+                            [[[{add_back}]]]
+                                input = {add_back}year"""
+                _rain_config_dict.merge(configobj.ConfigObj(io.StringIO(_change_config_str)))
             # merge the rain config into our overall config
             config_dict.merge(_rain_config_dict)
-
-            # no rainfall gauge is connected, all we need do is remove any
-            # (now) unused [StdWXCalculate] config stanzas/options
-            # do we have a [[Deltas]] [[[rain]]], if so remove it
-            if 'rain' in config_dict['StdWXCalculate'].get('Deltas', {}):
-                # we have a [[[rain]]] stanza, we can safely delete it
-                _ = config_dict['StdWXCalculate']['Deltas'].pop('rain')
-                # if [[[rain]]] was the only [[Deltas]] key we can delete
-                # [[Deltas]] as well
-                if len(config_dict['StdWXCalculate']['Deltas']) == 0:
-                    _ = config_dict['StdWXCalculate'].pop('Deltas')
-            # do we have a [[Calculation]] 'rain' entry, if so remove it
-            if 'rain' in config_dict['StdWXCalculate'].get('Calculations', {}):
-                # we have a 'rain' config entry, we can safely delete it
-                _ = config_dict['StdWXCalculate']['Calculations'].pop('rain')
-
-
+            # finally we need to remove any [StdWXCalculate] entries that may
+            # exist that populate the t_rain orp_rain
+            if rain_field in config_dict['StdWXCalculate'].get('Deltas', {}):
+                # we have a [[[t_rain]]] or [[[p_rain]]] stanza, we need to
+                # delete it
+                _ = config_dict['StdWXCalculate']['Deltas'].pop(rain_field)
+            # do we have a corresponding [[Calculation]] entry, if so remove it
+            if rain_field in config_dict['StdWXCalculate'].get('Calculations', {}):
+                # we have such a config entry, delete it
+                _ = config_dict['StdWXCalculate']['Calculations'].pop(rain_field)
         else:
             # no rainfall gauge is connected, all we need do is remove any
             # (now) unused [StdWXCalculate] config stanzas/options
@@ -2658,6 +2679,50 @@ are {options}."""
             if 'rain' in config_dict['StdWXCalculate'].get('Calculations', {}):
                 # we have a 'rain' config entry, we can safely delete it
                 _ = config_dict['StdWXCalculate']['Calculations'].pop('rain')
+            if curr_gauge_type in ('tipping', 'piezo'):
+                _rain_config_str = f"""
+                [StdWXCalculate]
+                    [[Calculations]]
+                        {curr_gauge_type[0]}_rain = prefer_hardware
+                    [[Deltas]]
+                        [[[{curr_gauge_type[0]}_rain]]]
+                            input = {curr_gauge_type[0]}_rainyear"""
+                # convert the rain config string to a ConfigObj
+                _rain_config_dict = configobj.ConfigObj(io.StringIO(_rain_config_str))
+                # merge the rain config into our overall config
+                config_dict.merge(_rain_config_dict)
+            else:
+                _config_str = f"""
+                [StdWXCalculate]
+                    [[Calculations]]
+                        t_rain = prefer_hardware
+                        p_rain = prefer_hardware
+"""
+                # convert the rain config string to a ConfigObj
+                _config_dict = configobj.ConfigObj(io.StringIO(_config_str))
+                if 't_rain' not in config_dict['StdWXCalculate'].get('Deltas', {}):
+                    _config_str = f"""
+                [StdWXCalculate]
+                    [[Deltas]]
+                        [[[t_rain]]]
+                            input = {pref_t_field}"""
+                    _config_dict.merge(configobj.ConfigObj(io.StringIO(_config_str)))
+                if 'p_rain' not in config_dict['StdWXCalculate'].get('Deltas', {}):
+                    _config_str = f"""
+                [StdWXCalculate]
+                    [[Deltas]]
+                        [[[p_rain]]]
+                            input = {pref_p_field}"""
+                    _config_dict.merge(configobj.ConfigObj(io.StringIO(_config_str)))
+                # merge the overall config into our config to keep user settings
+                config_dict.merge(_config_dict)
+            if 'field_map_extensions' in config_dict['EcowittHttp']:
+                if 'rainRate' in config_dict['EcowittHttp']['field_map_extensions']:
+                    _ = config_dict['EcowittHttp']['field_map_extensions'].pop('rainRate')
+                if len(config_dict['EcowittHttp']['field_map_extensions']) == 0:
+                    _ = config_dict['EcowittHttp'].pop('field_map_extensions')
+
+
         print()
 
         # set lightning_strike_count
