@@ -399,7 +399,7 @@ class EcowittHttpInstaller(ExtensionInstaller):
             raise weewx.UnsupportedFeature(msg)
         super().__init__(
             version=DRIVER_VERSION,
-            name='Ecowitt local HTTP API driver',
+            name='Ecowitt_HTTP',
             description='WeeWX driver for devices supporting the Ecowitt local HTTP API.',
             author="Gary Roderick",
             author_email="gjroderick<@>gmail.com",
