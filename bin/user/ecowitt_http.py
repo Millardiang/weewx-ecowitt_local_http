@@ -560,7 +560,6 @@ class InvertibleSetError(Exception):
 
     def __init__(self, value):
         self.value = value
-        # TODO. What is this?
         msg = 'The value "{}" is already in the mapping.'
         super().__init__(msg.format(value))
 
@@ -1654,11 +1653,10 @@ class EcowittHttpService(weewx.engine.StdService, EcowittCommon):
     is augmented with the mapped device data.
 
     Class EcowittHttpCollector collects and parses data from the API. The
-    EcowittHttpCollector runs in a separate thread, so it does not block the
+    EcowittHttpCollector runs in a separate thread so it does not block the
     main WeeWX processing loop. The EcowittHttpCollector is turn uses child
-    # TODO. Station and Parser ?
-    classes Station and Parser to interact directly with the API and parse the
-    API responses respectively.
+    class EcowittDevice to interact with the Ecowitt device and obtain and
+    parse data from the API.
     """
 
     def __init__(self, engine, config_dict):
@@ -1683,6 +1681,11 @@ class EcowittHttpService(weewx.engine.StdService, EcowittCommon):
         log.info('EcowittHttpService: version is %s' % DRIVER_VERSION)
         # set the unit system we will emit
         self.unit_system = UNIT_SYSTEM
+        # initialize my superclasses, we need to do this manually due to
+        # differing signatures
+        EcowittCommon.__init__(self, unit_system=self.unit_system, **gw_config_dict)
+        weewx.engine.StdService.__init__(self, engine, config_dict)
+
         # age (in seconds) before API data is considered too old to use, use a
         # default
         self.max_age = int(gw_config_dict.get('max_age', DEFAULT_MAX_AGE))
@@ -1690,19 +1693,10 @@ class EcowittHttpService(weewx.engine.StdService, EcowittCommon):
         # an extended lost contact period
         self.lost_contact_log_period = int(gw_config_dict.get('lost_contact_log_period',
                                                               DEFAULT_LOST_CONTACT_LOG_PERIOD))
-        # TODO. this should be moved to class EcowittCommon __init__
-        # get device specific debug settings
-        self.driver_debug = DebugOptions(**gw_config_dict)
-
         if self.driver_debug.any or weewx.debug > 0:
             log.info('     max age of API data to be used is %d seconds' % self.max_age)
             log.info('     lost contact will be logged every '
                      '%d seconds' % self.lost_contact_log_period)
-
-        # initialize my superclasses, we need to do this manually due to
-        # differing signatures
-        EcowittCommon.__init__(self, unit_system=self.unit_system, **gw_config_dict)
-        weewx.engine.StdService.__init__(self, engine, config_dict)
 
         # set failure logging on
         self.log_failures = True
@@ -1839,17 +1833,8 @@ class EcowittHttpService(weewx.engine.StdService, EcowittCommon):
         # packet to add to the loop packet
         if self.latest_sensor_data is not None:
             # we have a sensor data packet
-#            # if not already done so determine which cumulative rain field will
-#            # be used to determine the per period rain field
-#            if not self.rain_mapping_confirmed or not self.piezo_rain_mapping_confirmed:
-#                self.get_cumulative_rain_field(self.latest_sensor_data)
-#            # get the rainfall this period from total
-#            self.calculate_rain(self.latest_sensor_data)
-#            # get the lightning strike count this period from total
-#            self.calculate_lightning_count(self.latest_sensor_data)
             # map the raw data to WeeWX loop packet fields
             mapped_data = self.mapper.map_data(self.latest_sensor_data)
-            # TODO. Is this the best place to set usUnits?
             # add 'usUnits' to the packet
             mapped_data['usUnits'] = self.unit_system
             # log the mapped data if necessary
@@ -1934,9 +1919,8 @@ class EcowittHttpService(weewx.engine.StdService, EcowittCommon):
                 # lost contact timestamp
                 self.lost_con_ts = time.time()
                 # any failure logging for this failure will already have
-                # TODO. Station?
-                # occurred in our EcowittHttpCollector object and its Station,
-                # so turn off failure logging
+                # occurred in our EcowittHttpCollector object and its
+                # EcowittDevice object, so turn off failure logging
                 self.set_failure_logging(False)
             elif self.log_failures:
                 # we are already in a lost contact state, but failure logging
@@ -4318,9 +4302,6 @@ class EcowittHttpDriver(weewx.drivers.AbstractDevice, EcowittCommon):
         log.info('EcowittHttpDriver: version is %s' % DRIVER_VERSION)
         # set the unit system we will emit
         self.unit_system = UNIT_SYSTEM
-        # TODO. this should be moved to class EcowittCommon __init__
-        # get device specific debug settings
-        self.driver_debug = DebugOptions(**stn_dict)
         # now initialize my superclasses
         # TODO. Is this init complete? Correct parameters? Second call?
         super().__init__(unit_system=self.unit_system, **stn_dict)
@@ -4401,14 +4382,6 @@ class EcowittHttpDriver(weewx.drivers.AbstractDevice, EcowittCommon):
                         packet = {'dateTime': int(time.time() + 0.5)}
                     # add 'usUnits' to the packet
                     packet['usUnits'] = self.unit_system
-#                    # if not already known, determine which cumulative rain
-#                    # field will be used to determine the per period rain field
-#                    if not self.rain_mapping_confirmed or not self.piezo_rain_mapping_confirmed:
-#                        self.get_cumulative_rain_field(queue_data)
-#                    # get the rainfall this period from total
-#                    self.calculate_rain(queue_data)
-#                    # get the lightning strike count this period from total
-#                    self.calculate_lightning_count(queue_data)
                     # use our mapper to map the raw data to WeeWX loop packet
                     # fields
                     mapped_data = self.mapper.map_data(queue_data)
@@ -4603,15 +4576,6 @@ class EcowittHttpDriver(weewx.drivers.AbstractDevice, EcowittCommon):
                 record = {'dateTime': rec['datetime'],
                           'usUnits': self.unit_system,
                           'interval': rec['interval']}
-#                # do we have a suitable mapping for calculating per-record
-#                # rainfall, if not obtain a suitable field
-#                if not self.rain_mapping_confirmed or not self.piezo_rain_mapping_confirmed:
-#                    self.get_cumulative_rain_field(rec)
-#                # get the rainfall for this period from the chosen cumulative
-#                # field
-#                self.calculate_rain(rec)
-#                # get the lightning strike count for this period from the total
-#                self.calculate_lightning_count(rec)
                 # map the history data to WeeWX archive record/loop packet fields
                 mapped_data = self.mapper.map_data(rec)
                 # add the mapped data to the empty record
