@@ -664,6 +664,7 @@ class InvalidApiResponseError(Exception):
 class ApiResponseError(Exception):
     """Exception raised when an API response error code is received."""
 
+
 # ============================================================================
 #                             class DebugOptions
 # ============================================================================
@@ -5059,6 +5060,7 @@ class EcowittHttpApi:
             # rather than using the Request object's 'data' parameter so the
             # request is sent as a GET request rather than a POST request.
             full_url = '?'.join([url, data_enc])
+            log.info("full_url=%s" %  full_url)
             # create a Request object
             req = urllib.request.Request(url=full_url, headers=headers_dict)
             for attempt in range(self.max_tries):
@@ -5077,12 +5079,12 @@ class EcowittHttpApi:
                     # we timed out and failed to obtain data on this attempt,
                     # log it
                     if weewx.debug >= 2:
-                        log.debug('Failed to get device data on attempt %d of %d' % (attempt,
-                                                                                     self.max_tries + 1))
+                        log.debug('Failed to get device data on attempt %d of %d' % (attempt +1,
+                                                                                     self.max_tries))
                 except urllib.error.URLError as e:
                     # we encountered an error, log the error and raise it
-                    log.error('Failed to get device data on attempt %d of %d' % (attempt,
-                                                                                 self.max_tries + 1))
+                    log.error('Failed to get device data on attempt %d of %d' % (attempt + 1,
+                                                                                 self.max_tries))
                     log.error('   **** %s' % e)
                     raise
                 else:
@@ -5091,7 +5093,7 @@ class EcowittHttpApi:
             else:
                 # the for loop terminated normally, so we exhausted all
                 # attempts without success
-                log.debug('Failed to get device data after %d attempts' % self.max_tries + 1)
+                log.debug('Failed to get device data after %d attempts' % self.max_tries)
             # Do a little massaging of the response, Ecowitt refers to some
             # wsxx devices as whxx in the API, fix this at the source. The
             # device model numbers are fairly unique so a simple replace will
