@@ -33,6 +33,9 @@ ecowitt_config = """
 [EcowittHttp]
     # This section is for the Ecowitt Local HTTP API driver.
 
+    # The device IP address:
+    ip_address = www.xxx.yyy.zzz
+    
     # How often to poll the API, default is every 20 seconds:
     poll_interval = 20
 
