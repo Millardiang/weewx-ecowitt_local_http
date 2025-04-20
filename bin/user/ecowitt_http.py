@@ -625,8 +625,11 @@ class InvertibleMap(dict):
 
 
 # ============================================================================
-#                    Ecowitt Local HTTP API error classes
+#                 Ecowitt Local HTTP API driver error classes
 # ============================================================================
+
+class ServiceInitializationError(Exception):
+    """Exception raised during initialization of an EcowittHttpService object."""
 
 class UnknownApiCommand(Exception):
     """Exception raised when an unknown API command was selected."""
@@ -1540,28 +1543,19 @@ class EcowittCommon:
             log.info(' '.join(debug_list))
 
         # create a EcowittHttpCollector object to interact with the device API,
-        # wrap in a try..except in case we have a problem
-        try:
-            self.collector = EcowittHttpCollector(ip_address=self.ip_address,
-                                                  poll_interval=self.poll_interval,
-                                                  max_tries=max_tries,
-                                                  retry_wait=retry_wait,
-                                                  url_timeout=self.url_timeout,
-                                                  unit_system=unit_system,
-                                                  use_wn32=use_wn32,
-                                                  ignore_wh40_batt=ignore_wh40_batt,
-                                                  show_battery=show_battery,
-                                                  log_unknown_fields=log_unknown_fields,
-                                                  fw_update_check_interval=fw_update_check_interval,
-                                                  debug=self.driver_debug)
-        except weewx.ViolatedPrecondition as e:
-            # TODO. These comments needs sorting out, particularly for the service
-            # A precondition required by the EcowittHttpCollector was not met,
-            # most likely we have no IP address. Raise a
-            # weewx.engine.InitializationError, this will cause the loading of
-            # the driver to abort and return control to the WeeWX engine.
-            raise weewx.engine.InitializationError from e
-        # initialise last lightning count and last rain properties
+        # if there is a problem our parent will handle any exceptions
+        self.collector = EcowittHttpCollector(ip_address=self.ip_address,
+                                              poll_interval=self.poll_interval,
+                                              max_tries=max_tries,
+                                              retry_wait=retry_wait,
+                                              url_timeout=self.url_timeout,
+                                              unit_system=unit_system,
+                                              use_wn32=use_wn32,
+                                              ignore_wh40_batt=ignore_wh40_batt,
+                                              show_battery=show_battery,
+                                              log_unknown_fields=log_unknown_fields,
+                                              fw_update_check_interval=fw_update_check_interval,
+                                              debug=self.driver_debug)
         self.last_lightning = None
         self.last_rain = None
         self.piezo_last_rain = None
@@ -1683,7 +1677,12 @@ class EcowittHttpService(weewx.engine.StdService, EcowittCommon):
         self.unit_system = UNIT_SYSTEM
         # initialize my superclasses, we need to do this manually due to
         # differing signatures
-        EcowittCommon.__init__(self, unit_system=self.unit_system, **gw_config_dict)
+        try:
+            EcowittCommon.__init__(self, unit_system=self.unit_system, **gw_config_dict)
+        except weewx.ViolatedPrecondition as e:
+            # we encountered an error during initialization and we cannot
+            # continue, raise a ServiceInitializationError
+            raise ServiceInitializationError from e
         weewx.engine.StdService.__init__(self, engine, config_dict)
 
         # age (in seconds) before API data is considered too old to use, use a
@@ -4303,8 +4302,15 @@ class EcowittHttpDriver(weewx.drivers.AbstractDevice, EcowittCommon):
         # set the unit system we will emit
         self.unit_system = UNIT_SYSTEM
         # now initialize my superclasses
-        # TODO. Is this init complete? Correct parameters? Second call?
-        super().__init__(unit_system=self.unit_system, **stn_dict)
+        try:
+            EcowittCommon.__init__(self, unit_system=self.unit_system, **stn_dict)
+        except weewx.ViolatedPrecondition as e:
+            # we encountered an error during initialization and we cannot
+            # continue, raise a ServiceInitializationError
+            raise weewx.engine.InitializationError from e
+#
+#        # TODO. Is this init complete? Correct parameters? Second call?
+#        super().__init__(unit_system=self.unit_system, **stn_dict)
         # save the catchup settings
         catchup_dict = stn_dict.get('catchup', dict())
         # the source
