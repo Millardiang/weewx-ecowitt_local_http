@@ -4308,9 +4308,6 @@ class EcowittHttpDriver(weewx.drivers.AbstractDevice, EcowittCommon):
             # we encountered an error during initialization and we cannot
             # continue, raise a ServiceInitializationError
             raise weewx.engine.InitializationError from e
-#
-#        # TODO. Is this init complete? Correct parameters? Second call?
-#        super().__init__(unit_system=self.unit_system, **stn_dict)
         # save the catchup settings
         catchup_dict = stn_dict.get('catchup', dict())
         # the source
