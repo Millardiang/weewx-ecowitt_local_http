@@ -3016,10 +3016,8 @@ class EcowittNetCatchup(Catchup):
     provide an effective 'virtual' logger capability to support catchup on
     startup.
 
-    # TODO. Confirm these ranges/values are correct.
-    # TODO. What about data older than 1460 days?
     Ecowitt.net uses an age-based approach for aggregating data as follows:
-    - station data from the past 90 is stored using a five-minute interval
+    - station data from the past 90 days is stored using a five-minute interval
     - station data older than 90 days but from the past 365 days is stored
       using a 30-minute interval
     - station data older than 365 days but from the past 730 days is stored
@@ -8481,7 +8479,6 @@ class EcowittHttpParser:
                 # and use the sub-string as the channel
                 if _match is not None:
                     channel = _match.group(0).lower()
-            # TODO. Should channel be of the form 'chx' or an integer
             return model, channel, data
 
     def get_model_from_firmware(self, firmware_string):
@@ -10630,7 +10627,6 @@ def bytes_to_hex(iterable, separator=' ', caps=True):
     # assume 'iterable' can be iterated by iterbytes and the individual
     # elements can be formatted with {:02X}
     format_str = "{:02X}" if caps else "{:02x}"
-    # TODO. Need to verify use of iterable and str.encode(iterable) do what we want
     try:
         return separator.join(format_str.format(c) for c in iterable)
     except ValueError:
@@ -12959,7 +12955,6 @@ class DirectEcowittDevice:
         overriding those in the config file.
         """
 
-        # TODO. vpd is displayed as mbar when temps are in C
         log.info('Displaying WeeWX loop packet fields emitted by the Ecowitt HTTP driver...')
         # we already have a station config dict, but we will accept a command
         # line specified device IP address if provided
