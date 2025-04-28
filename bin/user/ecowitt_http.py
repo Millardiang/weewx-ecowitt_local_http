@@ -3895,11 +3895,11 @@ class EcowittDeviceCatchup:
                 # Whilst the file contents have been downloaded and decoded
                 # there might still be various control or special characters
                 # (eg null characters, blank lines) that will cause the
-                # DictReader to fail. Strip these problems characters/sequences
+                # DictReader to fail. Strip these problem characters/sequences
                 # from the raw data.
                 clean_lines = self.clean_data(lines)
-                # finally obtain a DictReader object so we can convert our data
-                # to a sequence of dicts
+                # finally, obtain a DictReader object so we can convert our
+                # data to a sequence of dicts
                 try:
                     csv_reader = csv.DictReader(clean_lines)
                 except csv.Error as e:
