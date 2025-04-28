@@ -25,9 +25,11 @@ To run the test suite:
 '''
 # python imports
 import io
+import os
 import socket
 import struct
 import unittest
+import urllib.response
 
 from unittest.mock import patch
 
@@ -235,7 +237,209 @@ class DeviceCatchupTestCase(unittest.TestCase):
     }
     # mocked EcowittDevice.get_sdmmc_info response
     fake_get_sdmmc_info_data = {}
+    gen_get_sdmmc_info_data = {
+        'info': {
+            'Name':'SC16G',
+            'Type':'SDHC/SDXC',
+            'Speed':'20 MHz',
+            'Size':'15193 MB',
+            'Interval':'5'
+        },
+        'file_list': [
+            {
+                "name": "202503G.csv",
+                "type": "file",
+                "size": "1MB"
+            },
+            {
+                "name": "202503Allsensors_G.csv",
+                "type": "file",
+                "size": "171KB"
+            },
+            {
+                "name": "202504A.csv",
+                "type": "file",
+                "size": "1MB"
+            },
+            {
+                "name": "202504Allsensors_A.csv",
+                "type": "file",
+                "size": "2MB"
+            }
+        ]
+    }
 
+    gen_history_first_six_results = {
+        weewx.US: [
+            {'ch_aisle.1.temp': 29.6, 'dewpoint1': 23.1, 'heatindex1': 33.6, 'ch_aisle.1.humidity': 68.0,
+             'ch_aisle.3.temp': 27.4, 'dewpoint3': 22.8, 'heatindex3': 30.1, 'ch_aisle.3.humidity': 76.0,
+             'ch_aisle.4.temp': 27.1, 'dewpoint4': 22.3, 'heatindex4': 29.5, 'ch_aisle.4.humidity': 75.0,
+             'ch_aisle.5.temp': 27.9, 'dewpoint5': 23.1, 'heatindex5': 31.1, 'ch_aisle.5.humidity': 75.0,
+             'ch_aisle.6.temp': 27.4, 'dewpoint6': 22.2, 'heatindex6': 29.8, 'ch_aisle.6.humidity': 73.0,
+             'ch_aisle.7.temp': 28.0, 'dewpoint7': 22.7, 'heatindex7': 31.0, 'ch_aisle.7.humidity': 73.0,
+             'lightning.count': 0.0, 'lightning.distance': 34.0, 'ch_soil.1.humidity': 32.0, 'ch_pm25.1.PM25': 13.0,
+             'ch_temp.1.temp': 26.2, 'ch_lds.1.air': 492.0, 'ch_lds.1.depth': 1538.0, 'ch_lds.1.heat': 2044.0,
+             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742511300.0, 'interval': 5},
+            {'ch_aisle.1.temp': 29.8, 'dewpoint1': 23.3, 'heatindex1': 34.0, 'ch_aisle.1.humidity': 68.0,
+             'ch_aisle.3.temp': 27.5, 'dewpoint3': 22.9, 'heatindex3': 30.4, 'ch_aisle.3.humidity': 76.0,
+             'ch_aisle.4.temp': 27.1, 'dewpoint4': 22.3, 'heatindex4': 29.5, 'ch_aisle.4.humidity': 75.0,
+             'ch_aisle.5.temp': 28.0, 'dewpoint5': 23.0, 'heatindex5': 31.2, 'ch_aisle.5.humidity': 74.0,
+             'ch_aisle.6.temp': 27.5, 'dewpoint6': 22.3, 'heatindex6': 30.0, 'ch_aisle.6.humidity': 73.0,
+             'ch_aisle.7.temp': 28.1, 'dewpoint7': 22.8, 'heatindex7': 31.3, 'ch_aisle.7.humidity': 73.0,
+             'lightning.count': 0.0, 'lightning.distance': 34.0, 'ch_soil.1.humidity': 32.0, 'ch_pm25.1.PM25': 13.0,
+             'ch_temp.1.temp': 26.4, 'ch_lds.1.air': 500.0, 'ch_lds.1.depth': 1530.0, 'ch_lds.1.heat': 2044.0,
+             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742511600.0, 'interval': 5},
+            {'ch_aisle.1.temp': 29.9, 'dewpoint1': 23.4, 'heatindex1': 34.3, 'ch_aisle.1.humidity': 68.0,
+             'ch_aisle.3.temp': 27.6, 'dewpoint3': 23.0, 'heatindex3': 30.6, 'ch_aisle.3.humidity': 76.0,
+             'ch_aisle.4.temp': 27.2, 'dewpoint4': 22.4, 'heatindex4': 29.7, 'ch_aisle.4.humidity': 75.0,
+             'ch_aisle.5.temp': 28.1, 'dewpoint5': 23.1, 'heatindex5': 31.4, 'ch_aisle.5.humidity': 74.0,
+             'ch_aisle.6.temp': 27.6, 'dewpoint6': 22.4, 'heatindex6': 30.2, 'ch_aisle.6.humidity': 73.0,
+             'ch_aisle.7.temp': 28.2, 'dewpoint7': 22.9, 'heatindex7': 31.5, 'ch_aisle.7.humidity': 73.0,
+             'lightning.count': 0.0, 'lightning.distance': 34.0, 'ch_soil.1.humidity': 32.0, 'ch_pm25.1.PM25': 13.0,
+             'ch_temp.1.temp': 26.5, 'ch_lds.1.air': 494.0, 'ch_lds.1.depth': 1536.0, 'ch_lds.1.heat': 2044.0,
+             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742511900.0, 'interval': 5},
+            {'ch_aisle.1.temp': 30.1, 'dewpoint1': 23.6, 'heatindex1': 34.8, 'ch_aisle.1.humidity': 68.0,
+             'ch_aisle.3.temp': 27.7, 'dewpoint3': 23.1, 'heatindex3': 30.8, 'ch_aisle.3.humidity': 76.0,
+             'ch_aisle.4.temp': 27.3, 'dewpoint4': 22.5, 'heatindex4': 29.8, 'ch_aisle.4.humidity': 75.0,
+             'ch_aisle.5.temp': 28.3, 'dewpoint5': 23.3, 'heatindex5': 31.8, 'ch_aisle.5.humidity': 74.0,
+             'ch_aisle.6.temp': 27.7, 'dewpoint6': 22.4, 'heatindex6': 30.5, 'ch_aisle.6.humidity': 73.0,
+             'ch_aisle.7.temp': 28.3, 'dewpoint7': 22.8, 'heatindex7': 31.5, 'ch_aisle.7.humidity': 72.0,
+             'lightning.count': 0.0, 'lightning.distance': 34.0, 'ch_soil.1.humidity': 32.0, 'ch_pm25.1.PM25': 11.0,
+             'ch_temp.1.temp': 26.5, 'ch_lds.1.air': 487.0, 'ch_lds.1.depth': 1543.0, 'ch_lds.1.heat': 2046.0,
+             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742512200.0, 'interval': 5},
+            {'ch_aisle.1.temp': 30.2, 'dewpoint1': 23.7, 'heatindex1': 35.0, 'ch_aisle.1.humidity': 68.0,
+             'ch_aisle.3.temp': 27.7, 'dewpoint3': 23.1, 'heatindex3': 30.8, 'ch_aisle.3.humidity': 76.0,
+             'ch_aisle.4.temp': 27.4, 'dewpoint4': 22.6, 'heatindex4': 30.0, 'ch_aisle.4.humidity': 75.0,
+             'ch_aisle.5.temp': 28.4, 'dewpoint5': 23.3, 'heatindex5': 32.0, 'ch_aisle.5.humidity': 74.0,
+             'ch_aisle.6.temp': 27.8, 'dewpoint6': 22.5, 'heatindex6': 30.6, 'ch_aisle.6.humidity': 73.0,
+             'ch_aisle.7.temp': 28.4, 'dewpoint7': 22.9, 'heatindex7': 31.7, 'ch_aisle.7.humidity': 72.0,
+             'lightning.count': 0.0, 'lightning.distance': 34.0, 'ch_soil.1.humidity': 32.0, 'ch_pm25.1.PM25': 11.0,
+             'ch_temp.1.temp': 26.6, 'ch_lds.1.air': 510.0, 'ch_lds.1.depth': 1520.0, 'ch_lds.1.heat': 2048.0,
+             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742512500.0, 'interval': 5},
+            {'ch_aisle.1.temp': 30.4, 'dewpoint1': 23.6, 'heatindex1': 35.2, 'ch_aisle.1.humidity': 67.0,
+             'ch_aisle.3.temp': 27.8, 'dewpoint3': 23.0, 'heatindex3': 30.8, 'ch_aisle.3.humidity': 75.0,
+             'ch_aisle.4.temp': 27.5, 'dewpoint4': 22.7, 'heatindex4': 30.2, 'ch_aisle.4.humidity': 75.0,
+             'ch_aisle.5.temp': 28.5, 'dewpoint5': 23.4, 'heatindex5': 32.3, 'ch_aisle.5.humidity': 74.0,
+             'ch_aisle.6.temp': 27.8, 'dewpoint6': 22.5, 'heatindex6': 30.6, 'ch_aisle.6.humidity': 73.0,
+             'ch_aisle.7.temp': 28.6, 'dewpoint7': 23.1, 'heatindex7': 32.2, 'ch_aisle.7.humidity': 72.0,
+             'lightning.count': 0.0, 'lightning.distance': 34.0, 'ch_soil.1.humidity': 32.0, 'ch_pm25.1.PM25': 10.0,
+             'ch_temp.1.temp': 26.8, 'ch_lds.1.air': 502.0, 'ch_lds.1.depth': 1528.0, 'ch_lds.1.heat': 2048.0,
+             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742512800.0, 'interval': 5}
+        ],
+        weewx.METRIC : [
+            {'ch_aisle.1.temp': 29.6, 'dewpoint1': 23.1, 'heatindex1': 33.6, 'ch_aisle.1.humidity': 68.0,
+             'ch_aisle.3.temp': 27.4, 'dewpoint3': 22.8, 'heatindex3': 30.1, 'ch_aisle.3.humidity': 76.0,
+             'ch_aisle.4.temp': 27.1, 'dewpoint4': 22.3, 'heatindex4': 29.5, 'ch_aisle.4.humidity': 75.0,
+             'ch_aisle.5.temp': 27.9, 'dewpoint5': 23.1, 'heatindex5': 31.1, 'ch_aisle.5.humidity': 75.0,
+             'ch_aisle.6.temp': 27.4, 'dewpoint6': 22.2, 'heatindex6': 29.8, 'ch_aisle.6.humidity': 73.0,
+             'ch_aisle.7.temp': 28.0, 'dewpoint7': 22.7, 'heatindex7': 31.0, 'ch_aisle.7.humidity': 73.0,
+             'lightning.count': 0.0, 'lightning.distance': 34.0, 'ch_soil.1.humidity': 32.0, 'ch_pm25.1.PM25': 13.0,
+             'ch_temp.1.temp': 26.2, 'ch_lds.1.air': 492.0, 'ch_lds.1.depth': 1538.0, 'ch_lds.1.heat': 2044.0,
+             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742511300.0, 'interval': 5},
+            {'ch_aisle.1.temp': 29.8, 'dewpoint1': 23.3, 'heatindex1': 34.0, 'ch_aisle.1.humidity': 68.0,
+             'ch_aisle.3.temp': 27.5, 'dewpoint3': 22.9, 'heatindex3': 30.4, 'ch_aisle.3.humidity': 76.0,
+             'ch_aisle.4.temp': 27.1, 'dewpoint4': 22.3, 'heatindex4': 29.5, 'ch_aisle.4.humidity': 75.0,
+             'ch_aisle.5.temp': 28.0, 'dewpoint5': 23.0, 'heatindex5': 31.2, 'ch_aisle.5.humidity': 74.0,
+             'ch_aisle.6.temp': 27.5, 'dewpoint6': 22.3, 'heatindex6': 30.0, 'ch_aisle.6.humidity': 73.0,
+             'ch_aisle.7.temp': 28.1, 'dewpoint7': 22.8, 'heatindex7': 31.3, 'ch_aisle.7.humidity': 73.0,
+             'lightning.count': 0.0, 'lightning.distance': 34.0, 'ch_soil.1.humidity': 32.0, 'ch_pm25.1.PM25': 13.0,
+             'ch_temp.1.temp': 26.4, 'ch_lds.1.air': 500.0, 'ch_lds.1.depth': 1530.0, 'ch_lds.1.heat': 2044.0,
+             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742511600.0, 'interval': 5},
+            {'ch_aisle.1.temp': 29.9, 'dewpoint1': 23.4, 'heatindex1': 34.3, 'ch_aisle.1.humidity': 68.0,
+             'ch_aisle.3.temp': 27.6, 'dewpoint3': 23.0, 'heatindex3': 30.6, 'ch_aisle.3.humidity': 76.0,
+             'ch_aisle.4.temp': 27.2, 'dewpoint4': 22.4, 'heatindex4': 29.7, 'ch_aisle.4.humidity': 75.0,
+             'ch_aisle.5.temp': 28.1, 'dewpoint5': 23.1, 'heatindex5': 31.4, 'ch_aisle.5.humidity': 74.0,
+             'ch_aisle.6.temp': 27.6, 'dewpoint6': 22.4, 'heatindex6': 30.2, 'ch_aisle.6.humidity': 73.0,
+             'ch_aisle.7.temp': 28.2, 'dewpoint7': 22.9, 'heatindex7': 31.5, 'ch_aisle.7.humidity': 73.0,
+             'lightning.count': 0.0, 'lightning.distance': 34.0, 'ch_soil.1.humidity': 32.0, 'ch_pm25.1.PM25': 13.0,
+             'ch_temp.1.temp': 26.5, 'ch_lds.1.air': 494.0, 'ch_lds.1.depth': 1536.0, 'ch_lds.1.heat': 2044.0,
+             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742511900.0, 'interval': 5},
+            {'ch_aisle.1.temp': 30.1, 'dewpoint1': 23.6, 'heatindex1': 34.8, 'ch_aisle.1.humidity': 68.0,
+             'ch_aisle.3.temp': 27.7, 'dewpoint3': 23.1, 'heatindex3': 30.8, 'ch_aisle.3.humidity': 76.0,
+             'ch_aisle.4.temp': 27.3, 'dewpoint4': 22.5, 'heatindex4': 29.8, 'ch_aisle.4.humidity': 75.0,
+             'ch_aisle.5.temp': 28.3, 'dewpoint5': 23.3, 'heatindex5': 31.8, 'ch_aisle.5.humidity': 74.0,
+             'ch_aisle.6.temp': 27.7, 'dewpoint6': 22.4, 'heatindex6': 30.5, 'ch_aisle.6.humidity': 73.0,
+             'ch_aisle.7.temp': 28.3, 'dewpoint7': 22.8, 'heatindex7': 31.5, 'ch_aisle.7.humidity': 72.0,
+             'lightning.count': 0.0, 'lightning.distance': 34.0, 'ch_soil.1.humidity': 32.0, 'ch_pm25.1.PM25': 11.0,
+             'ch_temp.1.temp': 26.5, 'ch_lds.1.air': 487.0, 'ch_lds.1.depth': 1543.0, 'ch_lds.1.heat': 2046.0,
+             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742512200.0, 'interval': 5},
+            {'ch_aisle.1.temp': 30.2, 'dewpoint1': 23.7, 'heatindex1': 35.0, 'ch_aisle.1.humidity': 68.0,
+             'ch_aisle.3.temp': 27.7, 'dewpoint3': 23.1, 'heatindex3': 30.8, 'ch_aisle.3.humidity': 76.0,
+             'ch_aisle.4.temp': 27.4, 'dewpoint4': 22.6, 'heatindex4': 30.0, 'ch_aisle.4.humidity': 75.0,
+             'ch_aisle.5.temp': 28.4, 'dewpoint5': 23.3, 'heatindex5': 32.0, 'ch_aisle.5.humidity': 74.0,
+             'ch_aisle.6.temp': 27.8, 'dewpoint6': 22.5, 'heatindex6': 30.6, 'ch_aisle.6.humidity': 73.0,
+             'ch_aisle.7.temp': 28.4, 'dewpoint7': 22.9, 'heatindex7': 31.7, 'ch_aisle.7.humidity': 72.0,
+             'lightning.count': 0.0, 'lightning.distance': 34.0, 'ch_soil.1.humidity': 32.0, 'ch_pm25.1.PM25': 11.0,
+             'ch_temp.1.temp': 26.6, 'ch_lds.1.air': 510.0, 'ch_lds.1.depth': 1520.0, 'ch_lds.1.heat': 2048.0,
+             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742512500.0, 'interval': 5},
+            {'ch_aisle.1.temp': 30.4, 'dewpoint1': 23.6, 'heatindex1': 35.2, 'ch_aisle.1.humidity': 67.0,
+             'ch_aisle.3.temp': 27.8, 'dewpoint3': 23.0, 'heatindex3': 30.8, 'ch_aisle.3.humidity': 75.0,
+             'ch_aisle.4.temp': 27.5, 'dewpoint4': 22.7, 'heatindex4': 30.2, 'ch_aisle.4.humidity': 75.0,
+             'ch_aisle.5.temp': 28.5, 'dewpoint5': 23.4, 'heatindex5': 32.3, 'ch_aisle.5.humidity': 74.0,
+             'ch_aisle.6.temp': 27.8, 'dewpoint6': 22.5, 'heatindex6': 30.6, 'ch_aisle.6.humidity': 73.0,
+             'ch_aisle.7.temp': 28.6, 'dewpoint7': 23.1, 'heatindex7': 32.2, 'ch_aisle.7.humidity': 72.0,
+             'lightning.count': 0.0, 'lightning.distance': 34.0, 'ch_soil.1.humidity': 32.0, 'ch_pm25.1.PM25': 10.0,
+             'ch_temp.1.temp': 26.8, 'ch_lds.1.air': 502.0, 'ch_lds.1.depth': 1528.0, 'ch_lds.1.heat': 2048.0,
+             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742512800.0, 'interval': 5}
+        ],
+        weewx.METRICWX: [
+            {'ch_aisle.1.temp': 29.6, 'dewpoint1': 23.1, 'heatindex1': 33.6, 'ch_aisle.1.humidity': 68.0,
+             'ch_aisle.3.temp': 27.4, 'dewpoint3': 22.8, 'heatindex3': 30.1, 'ch_aisle.3.humidity': 76.0,
+             'ch_aisle.4.temp': 27.1, 'dewpoint4': 22.3, 'heatindex4': 29.5, 'ch_aisle.4.humidity': 75.0,
+             'ch_aisle.5.temp': 27.9, 'dewpoint5': 23.1, 'heatindex5': 31.1, 'ch_aisle.5.humidity': 75.0,
+             'ch_aisle.6.temp': 27.4, 'dewpoint6': 22.2, 'heatindex6': 29.8, 'ch_aisle.6.humidity': 73.0,
+             'ch_aisle.7.temp': 28.0, 'dewpoint7': 22.7, 'heatindex7': 31.0, 'ch_aisle.7.humidity': 73.0,
+             'lightning.count': 0.0, 'lightning.distance': 34.0, 'ch_soil.1.humidity': 32.0, 'ch_pm25.1.PM25': 13.0,
+             'ch_temp.1.temp': 26.2, 'ch_lds.1.air': 492.0, 'ch_lds.1.depth': 1538.0, 'ch_lds.1.heat': 2044.0,
+             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742511300.0, 'interval': 5},
+            {'ch_aisle.1.temp': 29.8, 'dewpoint1': 23.3, 'heatindex1': 34.0, 'ch_aisle.1.humidity': 68.0,
+             'ch_aisle.3.temp': 27.5, 'dewpoint3': 22.9, 'heatindex3': 30.4, 'ch_aisle.3.humidity': 76.0,
+             'ch_aisle.4.temp': 27.1, 'dewpoint4': 22.3, 'heatindex4': 29.5, 'ch_aisle.4.humidity': 75.0,
+             'ch_aisle.5.temp': 28.0, 'dewpoint5': 23.0, 'heatindex5': 31.2, 'ch_aisle.5.humidity': 74.0,
+             'ch_aisle.6.temp': 27.5, 'dewpoint6': 22.3, 'heatindex6': 30.0, 'ch_aisle.6.humidity': 73.0,
+             'ch_aisle.7.temp': 28.1, 'dewpoint7': 22.8, 'heatindex7': 31.3, 'ch_aisle.7.humidity': 73.0,
+             'lightning.count': 0.0, 'lightning.distance': 34.0, 'ch_soil.1.humidity': 32.0, 'ch_pm25.1.PM25': 13.0,
+             'ch_temp.1.temp': 26.4, 'ch_lds.1.air': 500.0, 'ch_lds.1.depth': 1530.0, 'ch_lds.1.heat': 2044.0,
+             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742511600.0, 'interval': 5},
+            {'ch_aisle.1.temp': 29.9, 'dewpoint1': 23.4, 'heatindex1': 34.3, 'ch_aisle.1.humidity': 68.0,
+             'ch_aisle.3.temp': 27.6, 'dewpoint3': 23.0, 'heatindex3': 30.6, 'ch_aisle.3.humidity': 76.0,
+             'ch_aisle.4.temp': 27.2, 'dewpoint4': 22.4, 'heatindex4': 29.7, 'ch_aisle.4.humidity': 75.0,
+             'ch_aisle.5.temp': 28.1, 'dewpoint5': 23.1, 'heatindex5': 31.4, 'ch_aisle.5.humidity': 74.0,
+             'ch_aisle.6.temp': 27.6, 'dewpoint6': 22.4, 'heatindex6': 30.2, 'ch_aisle.6.humidity': 73.0,
+             'ch_aisle.7.temp': 28.2, 'dewpoint7': 22.9, 'heatindex7': 31.5, 'ch_aisle.7.humidity': 73.0,
+             'lightning.count': 0.0, 'lightning.distance': 34.0, 'ch_soil.1.humidity': 32.0, 'ch_pm25.1.PM25': 13.0,
+             'ch_temp.1.temp': 26.5, 'ch_lds.1.air': 494.0, 'ch_lds.1.depth': 1536.0, 'ch_lds.1.heat': 2044.0,
+             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742511900.0, 'interval': 5},
+            {'ch_aisle.1.temp': 30.1, 'dewpoint1': 23.6, 'heatindex1': 34.8, 'ch_aisle.1.humidity': 68.0,
+             'ch_aisle.3.temp': 27.7, 'dewpoint3': 23.1, 'heatindex3': 30.8, 'ch_aisle.3.humidity': 76.0,
+             'ch_aisle.4.temp': 27.3, 'dewpoint4': 22.5, 'heatindex4': 29.8, 'ch_aisle.4.humidity': 75.0,
+             'ch_aisle.5.temp': 28.3, 'dewpoint5': 23.3, 'heatindex5': 31.8, 'ch_aisle.5.humidity': 74.0,
+             'ch_aisle.6.temp': 27.7, 'dewpoint6': 22.4, 'heatindex6': 30.5, 'ch_aisle.6.humidity': 73.0,
+             'ch_aisle.7.temp': 28.3, 'dewpoint7': 22.8, 'heatindex7': 31.5, 'ch_aisle.7.humidity': 72.0,
+             'lightning.count': 0.0, 'lightning.distance': 34.0, 'ch_soil.1.humidity': 32.0, 'ch_pm25.1.PM25': 11.0,
+             'ch_temp.1.temp': 26.5, 'ch_lds.1.air': 487.0, 'ch_lds.1.depth': 1543.0, 'ch_lds.1.heat': 2046.0,
+             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742512200.0, 'interval': 5},
+            {'ch_aisle.1.temp': 30.2, 'dewpoint1': 23.7, 'heatindex1': 35.0, 'ch_aisle.1.humidity': 68.0,
+             'ch_aisle.3.temp': 27.7, 'dewpoint3': 23.1, 'heatindex3': 30.8, 'ch_aisle.3.humidity': 76.0,
+             'ch_aisle.4.temp': 27.4, 'dewpoint4': 22.6, 'heatindex4': 30.0, 'ch_aisle.4.humidity': 75.0,
+             'ch_aisle.5.temp': 28.4, 'dewpoint5': 23.3, 'heatindex5': 32.0, 'ch_aisle.5.humidity': 74.0,
+             'ch_aisle.6.temp': 27.8, 'dewpoint6': 22.5, 'heatindex6': 30.6, 'ch_aisle.6.humidity': 73.0,
+             'ch_aisle.7.temp': 28.4, 'dewpoint7': 22.9, 'heatindex7': 31.7, 'ch_aisle.7.humidity': 72.0,
+             'lightning.count': 0.0, 'lightning.distance': 34.0, 'ch_soil.1.humidity': 32.0, 'ch_pm25.1.PM25': 11.0,
+             'ch_temp.1.temp': 26.6, 'ch_lds.1.air': 510.0, 'ch_lds.1.depth': 1520.0, 'ch_lds.1.heat': 2048.0,
+             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742512500.0, 'interval': 5},
+            {'ch_aisle.1.temp': 30.4, 'dewpoint1': 23.6, 'heatindex1': 35.2, 'ch_aisle.1.humidity': 67.0,
+             'ch_aisle.3.temp': 27.8, 'dewpoint3': 23.0, 'heatindex3': 30.8, 'ch_aisle.3.humidity': 75.0,
+             'ch_aisle.4.temp': 27.5, 'dewpoint4': 22.7, 'heatindex4': 30.2, 'ch_aisle.4.humidity': 75.0,
+             'ch_aisle.5.temp': 28.5, 'dewpoint5': 23.4, 'heatindex5': 32.3, 'ch_aisle.5.humidity': 74.0,
+             'ch_aisle.6.temp': 27.8, 'dewpoint6': 22.5, 'heatindex6': 30.6, 'ch_aisle.6.humidity': 73.0,
+             'ch_aisle.7.temp': 28.6, 'dewpoint7': 23.1, 'heatindex7': 32.2, 'ch_aisle.7.humidity': 72.0,
+             'lightning.count': 0.0, 'lightning.distance': 34.0, 'ch_soil.1.humidity': 32.0, 'ch_pm25.1.PM25': 10.0,
+             'ch_temp.1.temp': 26.8, 'ch_lds.1.air': 502.0, 'ch_lds.1.depth': 1528.0, 'ch_lds.1.heat': 2048.0,
+             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742512800.0, 'interval': 5}
+        ]
+    }
+    gen_history_results_count = 8255
     clean_data = {
         'clean': {
             'test_data': ['12345ABCDE', '67890FGHIJ'],
@@ -359,6 +563,67 @@ class DeviceCatchupTestCase(unittest.TestCase):
         # test data that includes blank lines
         self.assertSequenceEqual(device_catchup.clean_data(self.clean_data['blank']['test_data']),
                                  self.clean_data['blank']['response'])
+
+    def fake_get_file(self, filename):
+        """Creates a urllib.response.addinfourl object from a file.
+
+        Args:
+            filename: The file name.
+
+        Returns:
+            A urllib.response.addinfourl object.
+        """
+
+        # create the full path and file name
+        filename_path = '/'.join(['/var/tmp', filename])
+        # obtain the file contents
+        with open(filename_path, 'rb') as f:
+            file_content = f.read()
+        # obtain the file contents as a binary stream
+        file_obj = io.BytesIO(file_content)
+        # set some headers
+        headers = {
+            'Content-Length': str(len(file_content)),
+            'Content-Type': 'application/octet-stream',
+            'Last-Modified': str(os.path.getmtime(filename_path))
+        }
+        # create the url
+        url = 'file://' + os.path.abspath(filename_path)
+        # create an addinfourl object
+        response = urllib.response.addinfourl(file_obj, headers, url)
+        # add the code and msg properties
+        response.code = 200
+        response.msg = 'OK'
+        # return the addinfourl object
+        return response
+
+    @patch.object(user.ecowitt_http.EcowittDeviceCatchup, 'get_file', fake_get_file)
+    @patch.object(user.ecowitt_http.EcowittDevice, 'get_sdmmc_info_data')
+    def test_gen_history_records(self, mock_get_sdmmc_info_data):
+        """Test EcowittCatchupDevice.gen_history_records method."""
+
+        print()
+        print('   testing EcowittCatchupDevice.gen_history_records() ...')
+        # set return values for mocked methods
+        # get_sdmmc_info_data
+        mock_get_sdmmc_info_data.return_value = DeviceCatchupTestCase.gen_get_sdmmc_info_data
+
+        for unit_system in (weewx.US, weewx.METRIC, weewx.METRICWX):
+            # obtain an EcowittDeviceCatchup object that emits records using
+            # the unit system being tested
+            catchup_config = configobj.ConfigObj(self.device_catchup_config)
+            catchup_config['unit_system'] = unit_system
+            device_catchup = self.get_device_catchup(config=catchup_config,
+                                                     caller='test_gen_history_records')
+            print("device_catchup.unit_system=%s" % device_catchup.unit_system)
+            rec_no = 0
+            for rec in device_catchup.gen_history_records():
+                if rec_no < len(self.gen_history_first_six_results[unit_system]):
+                    print("assert rec")
+                    self.assertDictEqual(rec, self.gen_history_first_six_results[unit_system][rec_no])
+                rec_no += 1
+            print("assert count")
+            self.assertEqual(rec_no, self.gen_history_results_count)
 
     @staticmethod
     def get_device_catchup(config, caller):
