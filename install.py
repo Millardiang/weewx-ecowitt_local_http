@@ -10,7 +10,7 @@ PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
                  Installer for Ecowitt Local HTTP API Driver
 
-Version: 0.1.0a23                                       Date: xx April 2025
+Version: 0.1.0a24                                       Date: xx April 2025
 
 Revision History
     xx April 2025      v0.1.0
@@ -27,12 +27,15 @@ import weewx
 
 
 REQUIRED_WEEWX_VERSION = "5.0.0"
-DRIVER_VERSION = "0.1.0a23"
+DRIVER_VERSION = "0.1.0a24"
 # define our config as a multiline string so we can preserve comments
 ecowitt_config = """
 [EcowittHttp]
     # This section is for the Ecowitt Local HTTP API driver.
 
+    # The device IP address:
+    ip_address = www.xxx.yyy.zzz
+    
     # How often to poll the API, default is every 20 seconds:
     poll_interval = 20
 
