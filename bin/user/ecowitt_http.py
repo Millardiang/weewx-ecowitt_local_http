@@ -3982,8 +3982,8 @@ class EcowittDeviceCatchup:
                 # the 'Time' field could not be parsed, so ignore it and
                 # continue with the next record
                 continue
-            # process the record further if the timestamp is within our span of
-            # interest, otherwise skip the record
+            # continue processing the record if the timestamp is within our
+            # span of interest, otherwise skip the record
             if start_ts is None or ts > start_ts + self.catchup_grace:
                 # if we have not already done so obtain the units in use
                 if len(units) == 0:
@@ -4008,17 +4008,19 @@ class EcowittDeviceCatchup:
 
     @staticmethod
     def get_units(keys):
-        """Extract the history file units from the history field field names.
+        """Extract the history file units from the history file field names.
 
-        Examines a history file field names and for each WeeWX unit group
-        determines the corresponding WeeWX unit name.
+        Examines the field names for a history file (keys for a dictreader row)
+        and determine the WeeWX unit name to be used for each WeeWX unit group.
 
         Returns a dict of WeeWX unit names keyed by WeeWX unit group.
         """
 
-        # create a dict for our result, pre-populate with those unit
-        # groups/names for groups only have a single unit (ie groups that will
-        # not use unit conversion)
+        # Create a dict for our result, pre-populate with those unit
+        # groups/names for groups that only have a single unit (ie groups for
+        # which Ecowitt only allows one possible unit, eg group_percent -
+        # percent). Include groups/units not used by Ecowitt where WeeWX only
+        # uses one unit for the group.
         units = {
             "group_altitude"    : "meter",
             "group_amp"         : "amp",
@@ -4028,6 +4030,7 @@ class EcowittDeviceCatchup:
             "group_count"       : "count",
             "group_data"        : "byte",
             "group_db"          : "dB",
+            # TODO. Should this group/unit be included?
             "group_degree_day"  : "degree_C_day",
             "group_deltatime"   : "second",
             "group_direction"   : "degree_compass",
@@ -4048,74 +4051,154 @@ class EcowittDeviceCatchup:
             "group_volt"        : "volt",
             "group_volume"      : "liter"
         }
+        required_groups = {'group_temperature', 'group_speed', 'group_speed2',
+                           'group_pressure', 'group_rain', 'group_rainrate',
+                           'group_radiation', 'group_distance', 'group_depth'
+                           }
+        found_groups = set()
+        # iterate over the keys in the record
         for key in keys:
+            # For temperature we check for keys containing 'Temperature'. Is
+            # the key a 'temperature' and have we already set group_temperature
+            # units.
             if 'Temperature' in key and 'group_temperature' not in units:
+                # we have a 'temperature' for the first time
                 if 'C)' in key or chr(8451) in key:
+                    # we have temperature in C (chr(8451) is a legacy unit
+                    # symbol used by Ecowitt)
                     units['group_temperature'] = 'degree_C'
                 elif 'F)' in key or chr(8457) in key:
+                    # we have temperature in F (chr(8457) is a legacy unit
+                    # symbol used by Ecowitt)
                     units['group_temperature'] = 'degree_F'
                 else:
+                    # we have no temperature units, set to None
                     units['group_temperature'] = None
+                # update the found groups list
+                found_groups.add('group_temperature')
+            # For speed we check for keys containing 'Gust'. Is the key a
+            # 'speed' and have we already set group_speed units.
             if 'Gust' in key and 'group_speed' not in units:
+                # we have a 'speed' for the first time
                 if 'km/h)' in key:
+                    # we have speed in km/h
                     units['group_speed'] = 'km_per_hour'
                 elif 'mph)' in key:
+                    # we have speed in mph
                     units['group_speed'] = 'mile_per_hour'
                 elif 'm/s)' in key:
+                    # we have speed in m/s
                     units['group_speed'] = 'meter_per_second'
                 elif 'knots)' in key:
+                    # we have speed in knots
                     units['group_speed'] = 'knot'
                 else:
+                    # we have no speed units, set to None
                     units['group_speed'] = None
+                # it's likely not required but for consistency set the units
+                # for group_speed2 to the same as for group_speed
                 units['group_speed2'] = units['group_speed']
+                # update the found groups list
+                found_groups.add('group_speed')
+                found_groups.add('group_speed2')
+            # For pressure we check for keys containing 'Pressure'. Is the key
+            # a 'pressure' and have we already set group_pressure units.
             if 'Pressure' in key and 'group_pressure' not in units:
+                # we have a 'pressure' for the first time
                 if 'hPa)' in key:
+                    # we have speed in hPa
                     units['group_pressure'] = 'hPa'
                 elif 'inHg)' in key:
+                    # we have pressure in inHg
                     units['group_pressure'] = 'inHg'
                 elif 'mmHg)' in key:
+                    # we have pressure in mmHg
                     units['group_pressure'] = 'mmHg'
                 else:
+                    # we have no pressure units, set to None
                     units['group_pressure'] = None
+                # update the found groups list
+                found_groups.add('group_pressure')
+            # For rain we check for keys containing 'Rain'. Is the key a 'rain'
+            # and have we already set group_rain units.
             if 'Rain' in key and 'group_rain' not in units:
+                # we have a 'rain' for the first time
                 if 'mm)' in key:
+                    # we have rain in mm
                     units['group_rain'] = 'mm'
                     units['group_rainrate'] = 'mm_per_hour'
                 elif 'in)' in key:
+                    # we have rain in inches
                     units['group_rain'] = 'inch'
                     units['group_rainrate'] = 'inch_per_hour'
                 else:
+                    # we have no rain units, set to None
                     units['group_rain'] = None
                     units['group_rainrate'] = None
+                # update the found groups list
+                found_groups.add('group_rain')
+                found_groups.add('group_rainrate')
+            # For radiation we check for keys containing 'Solar Rad'. Is the
+            # key a 'radiation' and have we already set group_radiation units.
             if 'Solar Rad' in key and 'group_radiation' not in units:
+                # Solar radiation is a special case, Ecowitt actually measures ??? and uses a
+                # TODO. Need to check units used by Ecowitt here
+                # we have a '??' for the first time
                 if 'w/m2)' in key:
+                    # we have ?? in W/m2
                     units['group_radiation'] = 'watt_per_meter_squared'
                 elif 'inHg)' in key:
+                    # we have speed in kLux
                     units['group_radiation'] = 'kilolux'
                 elif 'mmHg)' in key:
+                    # we have speed in KFC
                     units['group_radiation'] = 'kfc'
                 else:
+                    # we have no ?? units, set to None
                     units['group_radiation'] = None
+                # update the found groups list
+                found_groups.add('group_radiation')
+            # For distance we check for keys containing 'distance'. Is the key
+            # a 'distance' and have we already set group_distance units.
             if 'distance' in key and 'group_distance' not in units:
+                # we have a 'distance' for the first time
                 if 'km)' in key:
+                    # we have distance in km
                     units['group_distance'] = 'km'
                 elif 'mile)' in key:
+                    # we have distance in miles
                     units['group_distance'] = 'mile'
                 else:
+                    # we have no distance units, set to None
                     units['group_distance'] = None
+                # update the found groups list
+                found_groups.add('group_distance')
+            # For depth we check for keys containing 'LDS'. Is the key a
+            # 'depth' and have we already set group_depth units.
             if 'LDS' in key and 'group_depth' not in units:
+                # we have a 'depth' for the first time
                 if 'mm)' in key:
+                    # we have depth in mm
                     units['group_depth'] = 'mm2'
                 elif 'cm)' in key:
+                    # we have depth in cm
                     units['group_depth'] = 'cm2'
                 elif 'in)' in key:
+                    # we have depth in inches
                     units['group_depth'] = 'inch2'
                 elif 'ft)' in key:
+                    # we have depth in feet
                     units['group_depth'] = 'foot2'
                 else:
+                    # we have no depth units, set to None
                     units['group_depth'] = None
-            if len(units.keys()) >= 7:
+                # update the found groups list
+                found_groups.add('group_depth')
+            # do we have entries for all required groups, if so we can finish
+            # iterating
+            if required_groups == found_groups:
                 break
+        # return our result
         return units
 
     def convert_history_rec(self, rec, units):
@@ -9005,17 +9088,18 @@ class EcowittHttpParser:
     def process_light_object(self, item):
         """Process a light dict with 'val' field only.
 
-        Ecowitt devices do not offer a pyranometer, rather they use a light
-        sensor to measure luminous flux in lumens and, if selected by the user,
-        an approximation is used to estimate solar irradiance. WeeWX does not
-        support such conversion nor will it likely support it in the future. As
-        Ecowitt devices are really measuring luminous flux and not solar
-        irradiance, any Ecowitt 'light' values are converted to the Weewx
-        luminous flux unit lumen. This is done by the driver without reference
-        to the WeeWX unit conversion machinery. In the case of light values
-        that have been converted to solar irradiance, the same Ecowitt
-        approximation is used to convert solar irradiance back to luminous
-        flux.
+        Ecowitt devices do not support a pyranometer, rather they support a
+        sensor suite that uses a light sensor to measure light intensity,
+        also known as illuminance, in lux. If selected by the user, an
+        approximation is used to estimate solar irradiance. WeeWX does not
+        natively support such conversion nor will it likely support it in the
+        future. As Ecowitt devices are really measuring light intensity and not
+        solar irradiance, any Ecowitt 'light' values are converted to the Weewx
+        light intensity/illuminance unit lux. This is done by the driver
+        without reference to the WeeWX unit conversion machinery. In the case
+        of light values that have been converted to solar irradiance by the
+        device, the same Ecowitt approximation is used to convert solar
+        irradiance value back to light intensity/illuminance.
 
         Some light observation dicts contain both the light value and unit in
         field 'val'. This method extracts the light value and returns the value
