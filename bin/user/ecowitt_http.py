@@ -3759,21 +3759,28 @@ class EcowittDeviceCatchup:
 
     # history data file fields by WeeWX unit group that may require unit
     # conversion
+    # TODO. Suspect these should be output field names from SdMapper, eg: common_list.0x02.val
     unit_groups_by_field = {
-        'group_temperature': ('intemp', 'outtemp', 'dewpoint', 'feelslike',
-                              'temp1', 'temp2', 'temp3', 'temp4', 'temp5',
-                              'temp6', 'temp7', 'temp8', 'dewpoint1',
-                              'dewpoint2', 'dewpoint3', 'dewpoint4', 'dewpoint5',
-                              'dewpoint6', 'dewpoint7', 'dewpoint8', 'heatindex1',
-                              'heatindex2', 'heatindex3', 'heatindex4', 'heatindex5',
-                              'heatindex6', 'heatindex7', 'heatindex8',
-                              'temp_ch1_temp', 'temp_ch2_temp', 'temp_ch3_temp',
-                              'temp_ch4_temp', 'temp_ch5_temp', 'temp_ch6_temp',
-                              'temp_ch7_temp', 'temp_ch8_temp'),
-        'group_speed' : ('windspeed', 'gustspeed'),
-        'group_pressure': ('absbarometer', 'relbarometer', 'vpd'),
-        'group_distance': ('lightningdist', ),
-        'group_depth': ('dist1', 'dist2', 'dist3', 'dist4')
+        'group_temperature': ('wh25.intemp', 'common_list.0x02.val', 'common_list.0x03.val', 'feelslike',
+                              'ch_aisle.1.temp', 'ch_aisle.2.temp', 'ch_aisle.3.temp', 'ch_aisle.4.temp',
+                              'ch_aisle.5.temp', 'ch_aisle.6.temp', 'ch_aisle.7.temp', 'ch_aisle.8.temp',
+                              'dewpoint1', 'dewpoint2', 'dewpoint3', 'dewpoint4',
+                              'dewpoint5', 'dewpoint6', 'dewpoint7', 'dewpoint8',
+                              'heatindex1', 'heatindex2', 'heatindex3', 'heatindex4',
+                              'heatindex5', 'heatindex6', 'heatindex7', 'heatindex8',
+                              'ch_temp.1.temp', 'ch_temp.2.temp', 'ch_temp.3.temp', 'ch_temp.4.temp',
+                              'ch_temp.5.temp', 'ch_temp.6.temp', 'ch_temp.7.temp', 'ch_temp.8.temp',
+                              'co2.temperature'),
+        'group_speed' : ('common_list.0x0B.val', 'common_list.0x0C.val'),
+        'group_pressure': ('wh25.abs', 'wh25.rel', 'common_list.5.val'),
+        'group_rain': ('rain.0x0D.val', 'rain.0x10.val', 'rain.0x11.val', 'rain.0x12.val',
+                       'rain.0x13.val', 't_rainhour', 'piezoRain.0x0D.val', 'piezoRain.0x10.val',
+                       'piezoRain.0x11.val', 'piezoRain.0x12.val', 'piezoRain.0x13.val', 'p_rainhour'),
+        'group_rainrate': ('rain.0x0E.val', 'piezoRain.0x0E.val'),
+        'group_illuminance': ('common_list.0x15.val', ),
+        'group_distance': ('lightning.distance', ),
+        'group_depth': ('ch_lds.1.air', 'ch_lds.2.air', 'ch_lds.3.air', 'ch_lds.4.air',
+                        'ch_lds.1.depth', 'ch_lds.2.depth', 'ch_lds.3.depth', 'ch_lds.4.depth')
     }
 
     def __init__(self, **options):
