@@ -4036,7 +4036,6 @@ class EcowittDeviceCatchup:
             "group_energy2"     : "watt_second",
             "group_fraction"    : "ppm",
             "group_frequency"   : "hertz",
-            "group_illuminance" : "lux",
             "group_interval"    : "minute",
             "group_length"      : "cm",
             "group_moisture"    : "centibar",
@@ -4050,7 +4049,7 @@ class EcowittDeviceCatchup:
         }
         required_groups = {'group_temperature', 'group_speed', 'group_speed2',
                            'group_pressure', 'group_rain', 'group_rainrate',
-                           'group_radiation', 'group_distance', 'group_depth'
+                           'group_illuminance', 'group_distance', 'group_depth'
                            }
         found_groups = set()
         # iterate over the keys in the record
@@ -4135,26 +4134,30 @@ class EcowittDeviceCatchup:
                 # update the found groups list
                 found_groups.add('group_rain')
                 found_groups.add('group_rainrate')
-            # For radiation we check for keys containing 'Solar Rad'. Is the
-            # key a 'radiation' and have we already set group_radiation units.
-            if 'Solar Rad' in key and 'group_radiation' not in units:
-                # Solar radiation is a special case, Ecowitt actually measures ??? and uses a
-                # TODO. Need to check units used by Ecowitt here
-                # we have a '??' for the first time
+            # TODO. Operation of this section needs to be confirmed
+            # Illuminance is a special case. Ecowitt sensors/suites do not
+            # contain pyranometers, rather they contain a light sensor that
+            # measures illuminance and then optionally uses this value to
+            # approximate solar irradiance (or WeeWX field 'radiation') and
+            # group_illuminance. Consequently, for 'illuminance' we need to
+            # look for a Solar Radiation field. Is the key a 'Solar Radiation'
+            # and have we already set group_illuminance units.
+            if 'Solar Rad' in key and 'group_illuminance' not in units:
+                # we have a 'Solar Radiation' for the first time
                 if 'w/m2)' in key:
                     # we have ?? in W/m2
-                    units['group_radiation'] = 'watt_per_meter_squared'
-                elif 'inHg)' in key:
+                    units['group_illuminance'] = 'watt_per_meter_squared'
+                elif 'klux)' in key:
                     # we have speed in kLux
-                    units['group_radiation'] = 'kilolux'
-                elif 'mmHg)' in key:
+                    units['group_illuminance'] = 'kilolux'
+                elif 'kfc)' in key:
                     # we have speed in KFC
-                    units['group_radiation'] = 'kfc'
+                    units['group_illuminance'] = 'kfc'
                 else:
-                    # we have no ?? units, set to None
-                    units['group_radiation'] = None
+                    # we have no 'Solar Radiation' units, set to None
+                    units['group_illuminance'] = None
                 # update the found groups list
-                found_groups.add('group_radiation')
+                found_groups.add('group_illuminance')
             # For distance we check for keys containing 'distance'. Is the key
             # a 'distance' and have we already set group_distance units.
             if 'distance' in key and 'group_distance' not in units:
