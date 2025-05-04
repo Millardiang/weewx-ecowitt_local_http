@@ -116,7 +116,7 @@ class DebugOptionsTestCase(unittest.TestCase):
                          self.debug_groups)
 
     def test_properties(self):
-        '''Test the setting of DebugOptions properties on initialisation.'''
+        """Test the setting of DebugOptions properties on initialisation."""
 
         print()
 
@@ -203,9 +203,12 @@ class ConfEditorTestCase(unittest.TestCase):
 
         Some fields require Accumulator extractor settings other than the
         default (average), eg: sensor battery and signal state fields. Check
-        these fields have bene included the relevant accumulator config
+        these fields have been included the relevant accumulator config
         strings/dicts.
         """
+
+        print()
+        print('    testing accumulator extractor config...')
 
 #        # schema_fields = [f[0] for f in schemas.wview_extended.table]
         mapper = user.ecowitt_http.HttpMapper()
