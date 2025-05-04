@@ -4070,15 +4070,15 @@ class EcowittDeviceCatchup:
                     # we have temperature in C (chr(8451) is a legacy unit
                     # symbol used by Ecowitt)
                     units['group_temperature'] = 'degree_C'
+                    # update the found groups list
+                    found_groups.add('group_temperature')
                 elif 'F)' in key or chr(8457) in key:
                     # we have temperature in F (chr(8457) is a legacy unit
                     # symbol used by Ecowitt)
                     units['group_temperature'] = 'degree_F'
-                else:
-                    # we have no temperature units, set to None
-                    units['group_temperature'] = None
-                # update the found groups list
-                found_groups.add('group_temperature')
+                    # update the found groups list
+                    found_groups.add('group_temperature')
+                continue
             # For speed we check for keys containing 'Gust'. Is the key a
             # 'speed' and have we already set group_speed units.
             if 'Gust' in key and 'group_speed' not in units:
@@ -4086,24 +4086,40 @@ class EcowittDeviceCatchup:
                 if 'km/h)' in key:
                     # we have speed in km/h
                     units['group_speed'] = 'km_per_hour'
+                    # it's likely not required but for consistency set the units
+                    # for group_speed2 to the same as for group_speed
+                    units['group_speed2'] = units['group_speed']
+                    # update the found groups list
+                    found_groups.add('group_speed')
+                    found_groups.add('group_speed2')
                 elif 'mph)' in key:
                     # we have speed in mph
                     units['group_speed'] = 'mile_per_hour'
+                    # it's likely not required but for consistency set the units
+                    # for group_speed2 to the same as for group_speed
+                    units['group_speed2'] = units['group_speed']
+                    # update the found groups list
+                    found_groups.add('group_speed')
+                    found_groups.add('group_speed2')
                 elif 'm/s)' in key:
                     # we have speed in m/s
                     units['group_speed'] = 'meter_per_second'
+                    # it's likely not required but for consistency set the units
+                    # for group_speed2 to the same as for group_speed
+                    units['group_speed2'] = units['group_speed']
+                    # update the found groups list
+                    found_groups.add('group_speed')
+                    found_groups.add('group_speed2')
                 elif 'knots)' in key:
                     # we have speed in knots
                     units['group_speed'] = 'knot'
-                else:
-                    # we have no speed units, set to None
-                    units['group_speed'] = None
-                # it's likely not required but for consistency set the units
-                # for group_speed2 to the same as for group_speed
-                units['group_speed2'] = units['group_speed']
-                # update the found groups list
-                found_groups.add('group_speed')
-                found_groups.add('group_speed2')
+                    # it's likely not required but for consistency set the units
+                    # for group_speed2 to the same as for group_speed
+                    units['group_speed2'] = units['group_speed']
+                    # update the found groups list
+                    found_groups.add('group_speed')
+                    found_groups.add('group_speed2')
+                continue
             # For pressure we check for keys containing 'Pressure'. Is the key
             # a 'pressure' and have we already set group_pressure units.
             if 'Pressure' in key and 'group_pressure' not in units:
@@ -4111,17 +4127,19 @@ class EcowittDeviceCatchup:
                 if 'hPa)' in key:
                     # we have speed in hPa
                     units['group_pressure'] = 'hPa'
+                    # update the found groups list
+                    found_groups.add('group_pressure')
                 elif 'inHg)' in key:
                     # we have pressure in inHg
                     units['group_pressure'] = 'inHg'
+                    # update the found groups list
+                    found_groups.add('group_pressure')
                 elif 'mmHg)' in key:
                     # we have pressure in mmHg
                     units['group_pressure'] = 'mmHg'
-                else:
-                    # we have no pressure units, set to None
-                    units['group_pressure'] = None
-                # update the found groups list
-                found_groups.add('group_pressure')
+                    # update the found groups list
+                    found_groups.add('group_pressure')
+                continue
             # For rain we check for keys containing 'Rain'. Is the key a 'rain'
             # and have we already set group_rain units.
             if 'Rain' in key and 'group_rain' not in units:
@@ -4130,17 +4148,17 @@ class EcowittDeviceCatchup:
                     # we have rain in mm
                     units['group_rain'] = 'mm'
                     units['group_rainrate'] = 'mm_per_hour'
+                    # update the found groups list
+                    found_groups.add('group_rain')
+                    found_groups.add('group_rainrate')
                 elif 'in)' in key:
                     # we have rain in inches
                     units['group_rain'] = 'inch'
                     units['group_rainrate'] = 'inch_per_hour'
-                else:
-                    # we have no rain units, set to None
-                    units['group_rain'] = None
-                    units['group_rainrate'] = None
-                # update the found groups list
-                found_groups.add('group_rain')
-                found_groups.add('group_rainrate')
+                    # update the found groups list
+                    found_groups.add('group_rain')
+                    found_groups.add('group_rainrate')
+                continue
             # TODO. Operation of this section needs to be confirmed
             # Illuminance is a special case. Ecowitt sensors/suites do not
             # contain pyranometers, rather they contain a light sensor that
@@ -4154,17 +4172,19 @@ class EcowittDeviceCatchup:
                 if 'w/m2)' in key:
                     # we have ?? in W/m2
                     units['group_illuminance'] = 'watt_per_meter_squared'
+                    # update the found groups list
+                    found_groups.add('group_illuminance')
                 elif 'klux)' in key:
                     # we have speed in kLux
                     units['group_illuminance'] = 'kilolux'
+                    # update the found groups list
+                    found_groups.add('group_illuminance')
                 elif 'kfc)' in key:
                     # we have speed in KFC
                     units['group_illuminance'] = 'kfc'
-                else:
-                    # we have no 'Solar Radiation' units, set to None
-                    units['group_illuminance'] = None
-                # update the found groups list
-                found_groups.add('group_illuminance')
+                    # update the found groups list
+                    found_groups.add('group_illuminance')
+                continue
             # For distance we check for keys containing 'distance'. Is the key
             # a 'distance' and have we already set group_distance units.
             if 'distance' in key and 'group_distance' not in units:
@@ -4172,14 +4192,14 @@ class EcowittDeviceCatchup:
                 if 'km)' in key:
                     # we have distance in km
                     units['group_distance'] = 'km'
+                    # update the found groups list
+                    found_groups.add('group_distance')
                 elif 'mile)' in key:
                     # we have distance in miles
                     units['group_distance'] = 'mile'
-                else:
-                    # we have no distance units, set to None
-                    units['group_distance'] = None
-                # update the found groups list
-                found_groups.add('group_distance')
+                    # update the found groups list
+                    found_groups.add('group_distance')
+                continue
             # For depth we check for keys containing 'LDS'. Is the key a
             # 'depth' and have we already set group_depth units.
             if 'LDS' in key and 'group_depth' not in units:
@@ -4187,20 +4207,24 @@ class EcowittDeviceCatchup:
                 if 'mm)' in key:
                     # we have depth in mm
                     units['group_depth'] = 'mm2'
+                    # update the found groups list
+                    found_groups.add('group_depth')
                 elif 'cm)' in key:
                     # we have depth in cm
                     units['group_depth'] = 'cm2'
+                    # update the found groups list
+                    found_groups.add('group_depth')
                 elif 'in)' in key:
                     # we have depth in inches
                     units['group_depth'] = 'inch2'
+                    # update the found groups list
+                    found_groups.add('group_depth')
                 elif 'ft)' in key:
                     # we have depth in feet
                     units['group_depth'] = 'foot2'
-                else:
-                    # we have no depth units, set to None
-                    units['group_depth'] = None
-                # update the found groups list
-                found_groups.add('group_depth')
+                    # update the found groups list
+                    found_groups.add('group_depth')
+                continue
             # do we have entries for all required groups, if so we can finish
             # iterating
             if required_groups == found_groups:
@@ -4220,8 +4244,12 @@ class EcowittDeviceCatchup:
                 if field in rec:
                     # obtain a ValueTuple representing the current field
                     try:
-                        _vt = weewx.units.ValueTuple(rec[field],
-                                                     units[unit_group],
+                        if field == 'common_list.5.val':
+                            _val = rec[field] * 10
+                        else:
+                            _val = rec[field]
+                        _vt = weewx.units.ValueTuple(_val,
+                                                     units.get(unit_group),
                                                      unit_group)
                     except (KeyError, TypeError, ValueError) as e:
                         # an error occurred creating a ValueTuple, log it and
