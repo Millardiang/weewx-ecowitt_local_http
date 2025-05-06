@@ -4179,7 +4179,7 @@ class EcowittDeviceCatchup:
                     units['group_illuminance'] = 'kilolux'
                     # update the found groups list
                     found_groups.add('group_illuminance')
-                elif 'kfc)' in key:
+                elif 'Kfc)' in key:
                     # we have speed in KFC
                     units['group_illuminance'] = 'kfc'
                     # update the found groups list
@@ -4242,12 +4242,25 @@ class EcowittDeviceCatchup:
             # iterate over each field belonging to the current unit group
             for field in self.unit_groups_by_field[unit_group]:
                 if field in rec:
-                    # obtain a ValueTuple representing the current field
+                    # obtain a ValueTuple representing the current field so we
+                    # can use the WeeWX unit conversion machinery
                     try:
-                        if field == 'common_list.5.val':
+                        # Ecowitt have decided that when pressure units are set
+                        # to 'hPa' VPD (common_list.5.val) will be returned in
+                        # kPa. This will occur when the 'group_pressure' unit
+                        # setting is hPa. Unfortunately, WeeWX can only use one
+                        # pressure unit at a time so check if we have VPD and
+                        # 'group_pressure' is set to hPa (this means VPD is in
+                        # kPa) and if so do a pre-convert of the VPD kPa value
+                        # to hPa.
+                        if field == 'common_list.5.val' and units.get(unit_group) == 'hPa':
+                            # we have VPD and it is in kPa, so convert the
+                            # value to hPa
                             _val = rec[field] * 10
                         else:
+                            # no need to do any pre-conversion
                             _val = rec[field]
+                        # now we can express our value as a ValueTuple
                         _vt = weewx.units.ValueTuple(_val,
                                                      units.get(unit_group),
                                                      unit_group)
