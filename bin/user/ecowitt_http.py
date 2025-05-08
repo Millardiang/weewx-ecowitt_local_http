@@ -18,10 +18,10 @@ PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with
 this program.  If not, see https://www.gnu.org/licenses/.
 
-Version: 0.1.0a24                                  Date: X April 2025
+Version: 0.1.0a25                                  Date: X May 2025
 
 Revision History
-    X April 2025            v0.1.0
+    X May 2025            v0.1.0
         - initial release
 
 
@@ -131,7 +131,7 @@ log = logging.getLogger(__name__)
 
 
 DRIVER_NAME = 'EcowittHttp'
-DRIVER_VERSION = '0.1.0a24'
+DRIVER_VERSION = '0.1.0a25'
 
 # device models that are supported by the driver
 SUPPORTED_DEVICES = ('GW1100', 'GW1200', 'GW2000',
@@ -1483,12 +1483,12 @@ class EcowittCommon:
         self.poll_interval = int(ec_config.get('poll_interval',
                                                DEFAULT_POLL_INTERVAL))
         # Is a WN32 in use. A WN32 TH sensor can override/provide outdoor TH
-        # data to the device. The use of WN32 TH data is transparent and we do
-        # not need to know if a WN32 or some other sensor is providing outdoor
-        # TH data. However, in terms of battery state we need to know the
-        # sensor type so that sensor battery and signal state data can be
-        # reported against the correct sensor. A WN32 is more common than not
-        # so default to True.
+        # data to the device. The use of WN32 TH data by the device is
+        # transparent and the driver does not need to know if a WN32 or some
+        # other sensor is providing outdoor TH data. However, in terms of
+        # battery state the driver needs to know the sensor type so that sensor
+        # battery and signal state data can be reported against the correct
+        # sensor. A WN32 is more common than not so default to True.
         use_wn32 = weeutil.weeutil.tobool(ec_config.get('wn32', True))
         # do we ignore battery state data from legacy WH40 sensors that do not
         # provide valid battery state data
@@ -5572,7 +5572,8 @@ class EcowittHttpParser:
     def __init__(self, unit_system=UNIT_SYSTEM,
                  show_battery=DEFAULT_FILTER_BATTERY,
                  log_unknown_fields=True,
-                 debug = DebugOptions()):
+                 use_wn32=True,
+                 debug=DebugOptions()):
         """Initialise an EcowittHttpParser object."""
 
         # the unit system we are to use
@@ -5582,6 +5583,9 @@ class EcowittHttpParser:
         self.show_battery = show_battery
         # do we log unknown fields at info or leave at debug
         self.log_unknown_fields = log_unknown_fields
+        # save the use_wn32 flag for later use
+        self.use_wn32 = use_wn32
+        # save the debug options
         self.debug = debug
 
     @staticmethod
@@ -8615,6 +8619,10 @@ class EcowittHttpParser:
                 data['version'] = sensor.get('version')
             # obtain the sensor model
             model = sensor.get('img')
+            # if the model shown is a WH26 check to see if it should be
+            # recorded as a WN32 and if so make the change
+            if model == 'wh26' and self.use_wn32:
+                model = 'wn32'
 
             # Obtain the channel number if the sensor is part of a channelised
             # sensor group, if the sensor is not part of a channelised group
@@ -10134,6 +10142,7 @@ class EcowittDevice:
         self.parser = EcowittHttpParser(unit_system=unit_system,
                                         show_battery=show_battery,
                                         log_unknown_fields=log_unknown_fields,
+                                        use_wn32=use_wn32,
                                         debug=debug)
         # get an EcowittSensors object to handle the specialised processing of
         # sensor metadata
