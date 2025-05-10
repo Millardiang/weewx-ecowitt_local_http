@@ -41,6 +41,12 @@ ecowitt_config = """
 
     # The driver to use:
     driver = user.ecowitt_http
+
+    # Is a WN32P used for indoor temperature, humidity and pressure
+    wn32_indoor = False
+
+    # Is a WN32 used for outdoor temperature and humidity
+    wn32_outdoor = False
     
 [StdWXCalculate]
 
@@ -124,6 +130,8 @@ ecowitt_config = """
     [[wh65_batt]]
         extractor = last
     [[wn32_batt]]
+        extractor = last
+    [[wn32p_batt]]
         extractor = last
     [[wn31_ch1_batt]]
         extractor = last
@@ -248,6 +256,8 @@ ecowitt_config = """
     [[wh65_sig]]
         extractor = last
     [[wn32_sig]]
+        extractor = last
+    [[wn32p_sig]]
         extractor = last
     [[wn31_ch1_sig]]
         extractor = last
