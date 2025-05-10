@@ -1482,14 +1482,15 @@ class EcowittCommon:
         # DEFAULT_POLL_INTERVAL
         self.poll_interval = int(ec_config.get('poll_interval',
                                                DEFAULT_POLL_INTERVAL))
-        # Is a WN32 in use. A WN32 TH sensor can override/provide outdoor TH
-        # data to the device. The use of WN32 TH data by the device is
-        # transparent and the driver does not need to know if a WN32 or some
-        # other sensor is providing outdoor TH data. However, in terms of
-        # battery state the driver needs to know the sensor type so that sensor
-        # battery and signal state data can be reported against the correct
-        # sensor. A WN32 is more common than not so default to True.
-        use_wn32 = weeutil.weeutil.tobool(ec_config.get('wn32', True))
+        # Depending on the model a WN32 TH sensor can override/provide indoor
+        # and/or outdoor TH data and outdoor pressure data to the device. The
+        # use of WN32 data by the device is transparent to the driver does not
+        # need to know what type of sensor (WN32 or something else) is
+        # providing this data. However, in terms of battery state the driver
+        # needs to know the sensor type so that sensor battery and signal state
+        # data can be reported against the correct sensor type.
+        wn32_indoor = weeutil.weeutil.tobool(ec_config.get('wn32_indoor', False))
+        wn32_outdoor = weeutil.weeutil.tobool(ec_config.get('wn32_outdoor', False))
         # do we ignore battery state data from legacy WH40 sensors that do not
         # provide valid battery state data
         ignore_wh40_batt = weeutil.weeutil.tobool(ec_config.get('ignore_legacy_wh40_battery',
@@ -1550,7 +1551,8 @@ class EcowittCommon:
                                               retry_wait=retry_wait,
                                               url_timeout=self.url_timeout,
                                               unit_system=unit_system,
-                                              use_wn32=use_wn32,
+                                              wn32_indoor=wn32_indoor,
+                                              wn32_outdoor=wn32_outdoor,
                                               ignore_wh40_batt=ignore_wh40_batt,
                                               show_battery=show_battery,
                                               log_unknown_fields=log_unknown_fields,
@@ -4868,7 +4870,8 @@ class EcowittHttpCollector(Collector):
                  retry_wait=DEFAULT_RETRY_WAIT,
                  url_timeout=DEFAULT_URL_TIMEOUT,
                  unit_system=UNIT_SYSTEM,
-                 use_wn32=True,
+                 wn32_indoor=False,
+                 wn32_outdoor=False,
                  ignore_wh40_batt=True,
                  show_battery=DEFAULT_FILTER_BATTERY,
                  log_unknown_fields=False,
@@ -4894,8 +4897,12 @@ class EcowittHttpCollector(Collector):
             log.debug('     available device firmware updates will be logged')
         else:
             log.debug('     device firmware update checks will not occur')
-        if use_wn32:
-            log.debug("     sensor ID decoding will use 'WN32'")
+        if wn32_indoor:
+            log.debug("     sensor ID decoding will use indoor 'WN32'")
+        else:
+            log.debug("     sensor ID decoding will use 'WH26'")
+        if wn32_outdoor:
+            log.debug("     sensor ID decoding will use outdoor 'WN32'")
         else:
             log.debug("     sensor ID decoding will use 'WH26'")
         if ignore_wh40_batt:
@@ -4917,7 +4924,8 @@ class EcowittHttpCollector(Collector):
                                     max_tries=max_tries,
                                     retry_wait=retry_wait,
                                     url_timeout=url_timeout,
-                                    use_wn32=use_wn32,
+                                    wn32_indoor=wn32_indoor,
+                                    wn32_outdoor=wn32_outdoor,
                                     ignore_wh40_batt=ignore_wh40_batt,
                                     show_battery=show_battery,
                                     log_unknown_fields=log_unknown_fields,
@@ -5572,7 +5580,8 @@ class EcowittHttpParser:
     def __init__(self, unit_system=UNIT_SYSTEM,
                  show_battery=DEFAULT_FILTER_BATTERY,
                  log_unknown_fields=True,
-                 use_wn32=True,
+                 wn32_indoor=False,
+                 wn32_outdoor=False,
                  debug=DebugOptions()):
         """Initialise an EcowittHttpParser object."""
 
@@ -5583,8 +5592,10 @@ class EcowittHttpParser:
         self.show_battery = show_battery
         # do we log unknown fields at info or leave at debug
         self.log_unknown_fields = log_unknown_fields
-        # save the use_wn32 flag for later use
-        self.use_wn32 = use_wn32
+        # save the indoor wn32 flag for later use
+        self.wn32_indoor = wn32_indoor
+        # save the outdoor wn32 flag for later use
+        self.wn32_outdoor = wn32_outdoor
         # save the debug options
         self.debug = debug
 
@@ -8619,9 +8630,14 @@ class EcowittHttpParser:
                 data['version'] = sensor.get('version')
             # obtain the sensor model
             model = sensor.get('img')
+            # do any WN32/WH25 and WN32/WH26 translation
             # if the model shown is a WH26 check to see if it should be
+            # recorded as a WN32P and if so make the change
+            if model == 'wh26' and self.wn32_indoor:
+                model = 'wn32p'
+            # if the model shown is a WH25 check to see if it should be
             # recorded as a WN32 and if so make the change
-            if model == 'wh26' and self.use_wn32:
+            if model == 'wh26' and self.wn32_outdoor:
                 model = 'wn32'
 
             # Obtain the channel number if the sensor is part of a channelised
@@ -10121,7 +10137,8 @@ class EcowittDevice:
                  max_tries=DEFAULT_MAX_TRIES,
                  retry_wait=DEFAULT_RETRY_WAIT,
                  url_timeout=DEFAULT_URL_TIMEOUT,
-                 use_wn32=True,
+                 wn32_indoor=False,
+                 wn32_outdoor=False,
                  ignore_wh40_batt=True,
                  show_battery=DEFAULT_FILTER_BATTERY,
                  log_unknown_fields=False,
@@ -10142,7 +10159,8 @@ class EcowittDevice:
         self.parser = EcowittHttpParser(unit_system=unit_system,
                                         show_battery=show_battery,
                                         log_unknown_fields=log_unknown_fields,
-                                        use_wn32=use_wn32,
+                                        wn32_indoor=wn32_indoor,
+                                        wn32_outdoor=wn32_outdoor,
                                         debug=debug)
         # get an EcowittSensors object to handle the specialised processing of
         # sensor metadata
