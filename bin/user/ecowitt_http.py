@@ -18,7 +18,7 @@ PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with
 this program.  If not, see https://www.gnu.org/licenses/.
 
-Version: 0.1.0a25                                  Date: X May 2025
+Version: 0.1.0a26                                  Date: X May 2025
 
 Revision History
     X May 2025            v0.1.0
@@ -30,8 +30,10 @@ following sensors are supported:
 
 WN31        temperature, humidity, signal level, battery state.  channels 1-8
             inclusive
-WN32        temperature, humidity, pressure, signal level, battery state (as
-            applicable). single device only
+WN32P       temperature, humidity, pressure, signal level, battery state.
+            single device only
+WN32        (non-WH32P models) temperature, humidity, signal level, battery
+            state. single device only
 WN34        temperature, signal level, battery state. channels 1-8 inclusive
 WN35        leaf wetness, signal level, battery state. channels 1-8 inclusive
 WH41/43:    PM2.5, 24-hour average PM2.5, signal level, battery state.
@@ -131,7 +133,7 @@ log = logging.getLogger(__name__)
 
 
 DRIVER_NAME = 'EcowittHttp'
-DRIVER_VERSION = '0.1.0a25'
+DRIVER_VERSION = '0.1.0a26'
 
 # device models that are supported by the driver
 SUPPORTED_DEVICES = ('GW1100', 'GW1200', 'GW2000',
@@ -409,6 +411,7 @@ DEFAULT_GROUPS = {
     'wh24.battery': 'group_count',
     'wh65.battery': 'group_count',
     'wn32.battery': 'group_count',
+    'wn32p.battery': 'group_count',
     'wn31.ch1.battery': 'group_count',
     'wn31.ch2.battery': 'group_count',
     'wn31.ch3.battery': 'group_count',
@@ -489,6 +492,7 @@ DEFAULT_GROUPS = {
     'wh24.signal': 'group_count',
     'wh65.signal': 'group_count',
     'wn32.signal': 'group_count',
+    'wn32p.signal': 'group_count',
     'wn31.ch1.signal': 'group_count',
     'wn31.ch2.signal': 'group_count',
     'wn31.ch3.signal': 'group_count',
@@ -553,6 +557,9 @@ DEFAULT_GROUPS = {
 
 # ============================================================================
 #                            InvertibleMap classes
+#
+# Based on the implementation of an invertible (bijective) map at
+# https://stackoverflow.com/a/34460187
 # ============================================================================
 
 class InvertibleSetError(Exception):
@@ -588,9 +595,9 @@ class InvertibleMap(dict):
     inv_map.inverse[3]
     c
 
-    This means that an invertibleDict object must have not only unique keys but
-    unique values as well. An InvertibleMap object supports all standard
-    dictionary methods and properties.
+    This means that an InvertibleDict object must have not only unique keys,
+    but must have unique values as well. An InvertibleMap object supports all
+    standard dictionary methods and properties.
     """
 
     def __init__(self, *args, inverse=None, **kwargs):
@@ -822,10 +829,43 @@ class FieldMapper:
                                                   **mapper_config)
 
     @staticmethod
-    def construct_field_map(default_map, **config):
-        """Construct a field map given a default field map and field map config."""
+    def construct_field_map(def_map, **config):
+        """Construct a field map given a default field map and field map config.
 
-        # first obtain the map from our config
+        Returns a field map as defined by the field map definition and then
+        modified by the field map extensions definition. If no field map
+        definition exists the default map modified by the field map extensions
+        definition is returned. If no field map or field map extensions
+        definitions exist the default map is returned.
+
+        Returns an InvertibleMap object.
+        """
+
+        # Depending on the model a WN32 TH sensor can override/provide indoor
+        # and/or outdoor TH data and outdoor pressure data to the device. The
+        # use of WN32 data by the device is transparent to the driver does not
+        # need to know what type of sensor (WN32 or something else) is
+        # providing this data. However, in terms of battery state the driver
+        # needs to know the sensor type so that sensor battery and signal state
+        # data can be reported against the correct sensor type.
+        wn32_indoor = weeutil.weeutil.tobool(config.get('wn32_indoor', False))
+        wn32_outdoor = weeutil.weeutil.tobool(config.get('wn32_outdoor', False))
+        # Update the default map given the wn32 indoor/outdoor config. First
+        # make sure the default map is an InvertibleMap object.
+        default_map = InvertibleMap(def_map)
+        # do we have an indoor WN32, if so update any WH25 battery and signal
+        # mappings to reflect the WN32
+        if wn32_indoor:
+            for source in ('wh25.battery', 'wh25.signal'):
+                if source in default_map.values():
+                    default_map.inverse[source] = '_'.join(['wn32', source.split('.', 1)[1]])
+        # do we have an outdoor WN32 (a WN32P), if so update any WH26 battery
+        # and signal mappings to reflect the WN32P
+        if wn32_outdoor:
+            for source in ('wh26.battery', 'wh26.signal'):
+                if source in default_map.values():
+                    default_map.inverse[source] = '_'.join(['wn32p', source.split('.', 1)[1]])
+        # obtain the map from our config
         field_map = config.get('field_map')
         # if no map was provided use the default
         if field_map is None:
@@ -858,8 +898,8 @@ class FieldMapper:
                     _dummy = field_map.pop(k)
             # now we can update the field map with the extensions
             field_map.update(extensions)
-        # we now have our final field map
-        return field_map
+        # we now have our final field map, ensuring it is an InvertibleMap
+        return InvertibleMap(field_map)
 
     def map_data(self, rec, unit_system=None):
         """Map a dict of data according to the field map.
@@ -1062,8 +1102,10 @@ class HttpMapper(FieldMapper):
     }
     # modular sensor state map
     default_sensor_state_map = {
-        'wn32_batt': 'wh26.battery',
-        'wn32_sig': 'wh26.signal',
+        'wh25_batt': 'wh25.battery',
+        'wh25_sig': 'wh25.signal',
+        'wh26_batt': 'wh26.battery',
+        'wh26_sig': 'wh26.signal',
         'wn31_ch1_batt': 'wn31.ch1.battery',
         'wn31_ch1_sig': 'wn31.ch1.signal',
         'wn31_ch2_batt': 'wn31.ch2.battery',
@@ -1389,8 +1431,6 @@ class SdMapper(FieldMapper):
         super().__init__(driver_debug=driver_debug,
                          default_map=def_map,
                          **mapper_config)
-        # convert our map to a ReversibleMap
-        self.field_map = InvertibleMap(self.field_map) if self.field_map is not None else None
 
     def map_data(self, rec, unit_system=None):
         """Map a packet of data according to the field map.
@@ -1482,15 +1522,6 @@ class EcowittCommon:
         # DEFAULT_POLL_INTERVAL
         self.poll_interval = int(ec_config.get('poll_interval',
                                                DEFAULT_POLL_INTERVAL))
-        # Depending on the model a WN32 TH sensor can override/provide indoor
-        # and/or outdoor TH data and outdoor pressure data to the device. The
-        # use of WN32 data by the device is transparent to the driver does not
-        # need to know what type of sensor (WN32 or something else) is
-        # providing this data. However, in terms of battery state the driver
-        # needs to know the sensor type so that sensor battery and signal state
-        # data can be reported against the correct sensor type.
-        wn32_indoor = weeutil.weeutil.tobool(ec_config.get('wn32_indoor', False))
-        wn32_outdoor = weeutil.weeutil.tobool(ec_config.get('wn32_outdoor', False))
         # do we ignore battery state data from legacy WH40 sensors that do not
         # provide valid battery state data
         ignore_wh40_batt = weeutil.weeutil.tobool(ec_config.get('ignore_legacy_wh40_battery',
@@ -1551,8 +1582,6 @@ class EcowittCommon:
                                               retry_wait=retry_wait,
                                               url_timeout=self.url_timeout,
                                               unit_system=unit_system,
-                                              wn32_indoor=wn32_indoor,
-                                              wn32_outdoor=wn32_outdoor,
                                               ignore_wh40_batt=ignore_wh40_batt,
                                               show_battery=show_battery,
                                               log_unknown_fields=log_unknown_fields,
@@ -2488,10 +2517,7 @@ startup once only or '1' to attempt startup indefinitely."""
         # of the field map.
         driver_config_dict = config_dict.get('EcowittHttp', {})
         # now get a HttpMapper object based on the driver config dict
-        _mapper = HttpMapper(driver_config_dict)
-        # get the field map from the mapper, but convert it to an InvertibleMap
-        # so we can look up both 'keys' and 'values'
-        _field_map = InvertibleMap(_mapper.field_map)
+        mapper = HttpMapper(driver_config_dict)
         # obtain the current [StdWXCalculate] [[Delta]] config if it exists
         _deltas_config_dict = config_dict['StdWXCalculate'].get('Delta', {})
         # get the WeeWX field currently used as the 'rain' 'input' field, if
@@ -2500,7 +2526,7 @@ startup once only or '1' to attempt startup indefinitely."""
         # get the Ecowitt field used to derive the WeeWX field that is used as
         # the 'rain' 'input' field, if there isn't such a WeeWX field then use
         # None
-        curr_rain_e_src = _field_map.get(curr_rain_w_src) if curr_rain_w_src is not None else None
+        curr_rain_e_src = mapper.field_map.get(curr_rain_w_src) if curr_rain_w_src is not None else None
         # Determine the rain gauge type in use, it will be either 'tipping'
         # or 'piezo'. If we can't determine the type then use the string
         # 'none'.
@@ -2520,10 +2546,10 @@ startup once only or '1' to attempt startup indefinitely."""
         for _field in EcowittHttpDriverConfEditor.t_src_fields:
             # does that field appear in the field map, it is of no use if it
             # does not
-            if _field in _field_map.values():
+            if _field in mapper.field_map.values():
                 # we have a field we can use, now do an inverse lookup to find
                 # the WeeWX field it is mapped to
-                pref_t_field = _field_map.inverse[_field]
+                pref_t_field = mapper.field_map.inverse[_field]
                 # no need to search further, break out of the loop
                 break
         # set our preferred piezo field name to None until we find a field
@@ -2532,10 +2558,10 @@ startup once only or '1' to attempt startup indefinitely."""
         for _field in EcowittHttpDriverConfEditor.p_src_fields:
             # does that field appear in the field map, it is of no use if it
             # does not
-            if _field in _field_map.values():
+            if _field in mapper.field_map.values():
                 # we have a field we can use, now do an inverse lookup to find
                 # the WeeWX field it is mapped to
-                pref_p_field = _field_map.inverse[_field]
+                pref_p_field = mapper.field_map.inverse[_field]
                 # no need to search further, break out of the loop
                 break
         # initialise a variable to hold the Ecowitt field being used to
@@ -2587,8 +2613,8 @@ is paired."""
                 # cumulative rain fields, the available fields consist of those
                 # fields in our tipping source field list that exist in the
                 # field map
-                _fields = [_field_map.inverse[f] for f in EcowittHttpDriverConfEditor.t_src_fields
-                           if f in _field_map.values()]
+                _fields = [mapper.field_map.inverse[f] for f in EcowittHttpDriverConfEditor.t_src_fields
+                           if f in mapper.field_map.values()]
                 # set the WeeWX field that will be replaced by 'rain', we will
                 # need to remove this field from StdWXCalculate before we are
                 # done
@@ -2611,8 +2637,8 @@ is paired."""
                     add_back = 't_rain'
                 # construct a string listing the available WeeWX piezo cumulative
                 # rain fields
-                _fields = [_field_map.inverse[f] for f in EcowittHttpDriverConfEditor.p_src_fields
-                           if f in _field_map.values()]
+                _fields = [mapper.field_map.inverse[f] for f in EcowittHttpDriverConfEditor.p_src_fields
+                           if f in mapper.field_map.values()]
                 # set the WeeWX field that will be replaced by 'rain', we will
                 # need to remove this field from StdWXCalculate before we are
                 # done
@@ -4870,8 +4896,6 @@ class EcowittHttpCollector(Collector):
                  retry_wait=DEFAULT_RETRY_WAIT,
                  url_timeout=DEFAULT_URL_TIMEOUT,
                  unit_system=UNIT_SYSTEM,
-                 wn32_indoor=False,
-                 wn32_outdoor=False,
                  ignore_wh40_batt=True,
                  show_battery=DEFAULT_FILTER_BATTERY,
                  log_unknown_fields=False,
@@ -4924,8 +4948,6 @@ class EcowittHttpCollector(Collector):
                                     max_tries=max_tries,
                                     retry_wait=retry_wait,
                                     url_timeout=url_timeout,
-                                    wn32_indoor=wn32_indoor,
-                                    wn32_outdoor=wn32_outdoor,
                                     ignore_wh40_batt=ignore_wh40_batt,
                                     show_battery=show_battery,
                                     log_unknown_fields=log_unknown_fields,
@@ -5580,8 +5602,6 @@ class EcowittHttpParser:
     def __init__(self, unit_system=UNIT_SYSTEM,
                  show_battery=DEFAULT_FILTER_BATTERY,
                  log_unknown_fields=True,
-                 wn32_indoor=False,
-                 wn32_outdoor=False,
                  debug=DebugOptions()):
         """Initialise an EcowittHttpParser object."""
 
@@ -5592,10 +5612,6 @@ class EcowittHttpParser:
         self.show_battery = show_battery
         # do we log unknown fields at info or leave at debug
         self.log_unknown_fields = log_unknown_fields
-        # save the indoor wn32 flag for later use
-        self.wn32_indoor = wn32_indoor
-        # save the outdoor wn32 flag for later use
-        self.wn32_outdoor = wn32_outdoor
         # save the debug options
         self.debug = debug
 
@@ -8630,16 +8646,6 @@ class EcowittHttpParser:
                 data['version'] = sensor.get('version')
             # obtain the sensor model
             model = sensor.get('img')
-            # do any WN32/WH25 and WN32/WH26 translation
-            # if the model shown is a WH26 check to see if it should be
-            # recorded as a WN32P and if so make the change
-            if model == 'wh26' and self.wn32_indoor:
-                model = 'wn32p'
-            # if the model shown is a WH25 check to see if it should be
-            # recorded as a WN32 and if so make the change
-            if model == 'wh26' and self.wn32_outdoor:
-                model = 'wn32'
-
             # Obtain the channel number if the sensor is part of a channelised
             # sensor group, if the sensor is not part of a channelised group
             # the channel will be set to None.
@@ -10137,8 +10143,6 @@ class EcowittDevice:
                  max_tries=DEFAULT_MAX_TRIES,
                  retry_wait=DEFAULT_RETRY_WAIT,
                  url_timeout=DEFAULT_URL_TIMEOUT,
-                 wn32_indoor=False,
-                 wn32_outdoor=False,
                  ignore_wh40_batt=True,
                  show_battery=DEFAULT_FILTER_BATTERY,
                  log_unknown_fields=False,
@@ -10159,8 +10163,6 @@ class EcowittDevice:
         self.parser = EcowittHttpParser(unit_system=unit_system,
                                         show_battery=show_battery,
                                         log_unknown_fields=log_unknown_fields,
-                                        wn32_indoor=wn32_indoor,
-                                        wn32_outdoor=wn32_outdoor,
                                         debug=debug)
         # get an EcowittSensors object to handle the specialised processing of
         # sensor metadata
