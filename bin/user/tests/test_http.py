@@ -1,4 +1,4 @@
-'''
+"""
 Test suite for the WeeWX Ecowitt gateway driver.
 
 Copyright (C) 2020-25 Gary Roderick                gjroderick<at>gmail.com
@@ -8,10 +8,10 @@ The test suite tests correct operation of:
 
 -
 
-Version: 0.1.0a21                                 Date: ? April 2025
+Version: 0.1.0a26                                 Date: ? May 2025
 
 Revision History
-    ?? April 2025       v0.1.0
+    ?? May 2025       v0.1.0
         -   initial release
 
 To run the test suite:
@@ -22,7 +22,7 @@ To run the test suite:
 -   run the test suite using:
 
     PYTHONPATH=/home/weewx/weewx-data/bin:/home/weewx/weewx/src python3 -m user.tests.test_http
-'''
+"""
 # python imports
 import io
 import os
@@ -57,11 +57,11 @@ import user.ecowitt_http
 # TODO. Add decode display_firmware check refer issue #31
 
 TEST_SUITE_NAME = 'Ecowitt HTTP driver'
-TEST_SUITE_VERSION = '0.1.0a18'
+TEST_SUITE_VERSION = '0.1.0a26'
 
 
 class bcolors:
-    '''Colors used for terminals'''
+    """Colors used for terminals"""
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
     OKCYAN = '\033[96m'
@@ -101,7 +101,7 @@ class DebugOptionsTestCase(unittest.TestCase):
         self.debug_config = configobj.ConfigObj(io.StringIO(debug_string))
 
     def test_constants(self):
-        '''Test constants used by DebugOptions.'''
+        """Test constants used by DebugOptions."""
 
         print()
 
@@ -177,7 +177,7 @@ class DebugOptionsTestCase(unittest.TestCase):
                 if all_groups[index] == false_group:
                     all_groups.pop(index)
                     break
-            # create a string contsaining the debug groups to be set
+            # create a string containing the debug groups to be set
             debug_string = 'debug = %s' % ', '.join(all_groups)
             # convert to a configobj
             _config = configobj.ConfigObj(io.StringIO(debug_string))
@@ -290,7 +290,7 @@ class DeviceCatchupTestCase(unittest.TestCase):
              'ch_aisle.7.temp': 82.4, 'dewpoint7': 72.86, 'heatindex7': 87.8, 'ch_aisle.7.humidity': 73.0,
              'lightning.count': 0.0, 'lightning.distance': 21.13, 'ch_soil.1.humidity': 32.0, 'ch_pm25.1.PM25': 13.0,
              'ch_temp.1.temp': 79.16, 'ch_lds.1.air': 1.61, 'ch_lds.1.depth': 5.05, 'ch_lds.1.heat': 2044.0,
-             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742511300.0, 'interval': 5},
+             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742522100.0, 'interval': 5},
             {'wh25.inhumi': 73.0, 'common_list.0x02.val': 71.06, 'common_list.0x07.val': 86.0,
              'common_list.0x03.val': 66.74, 'feelslike': 71.06, 'common_list.5.val': 0.1063,
              'common_list.0x0B.val': 1.7896, 'common_list.0x0C.val': 3.1317, 'common_list.0x0A.val': 236.0,
@@ -307,7 +307,7 @@ class DeviceCatchupTestCase(unittest.TestCase):
              'ch_aisle.7.temp': 82.58, 'dewpoint7': 73.04, 'heatindex7': 88.34, 'ch_aisle.7.humidity': 73.0,
              'lightning.count': 0.0, 'lightning.distance': 21.13, 'ch_soil.1.humidity': 32.0, 'ch_pm25.1.PM25': 13.0,
              'ch_temp.1.temp': 79.52, 'ch_lds.1.air': 1.64, 'ch_lds.1.depth': 5.02, 'ch_lds.1.heat': 2044.0,
-             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742511600.0, 'interval': 5},
+             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742522400.0, 'interval': 5},
             {'wh25.inhumi': 72.0, 'common_list.0x02.val': 71.06, 'common_list.0x07.val': 86.0,
              'common_list.0x03.val': 66.74, 'feelslike': 71.06, 'common_list.5.val': 0.1063,
              'common_list.0x0B.val': 0.0, 'common_list.0x0C.val': 2.0132, 'common_list.0x0A.val': 288.0,
@@ -324,7 +324,7 @@ class DeviceCatchupTestCase(unittest.TestCase):
              'ch_aisle.7.temp': 82.76, 'dewpoint7': 73.22, 'heatindex7': 88.7, 'ch_aisle.7.humidity': 73.0,
              'lightning.count': 0.0, 'lightning.distance': 21.13, 'ch_soil.1.humidity': 32.0, 'ch_pm25.1.PM25': 13.0,
              'ch_temp.1.temp': 79.7, 'ch_lds.1.air': 1.62, 'ch_lds.1.depth': 5.04, 'ch_lds.1.heat': 2044.0,
-             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742511900.0, 'interval': 5},
+             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742522700.0, 'interval': 5},
             {'wh25.inhumi': 72.0, 'common_list.0x02.val': 70.88, 'common_list.0x07.val': 86.0,
              'common_list.0x03.val': 66.56, 'feelslike': 70.88, 'common_list.5.val': 0.1063,
              'common_list.0x0B.val': 3.3554, 'common_list.0x0C.val': 3.5791, 'common_list.0x0A.val': 226.0,
@@ -341,7 +341,7 @@ class DeviceCatchupTestCase(unittest.TestCase):
              'ch_aisle.7.temp': 82.94, 'dewpoint7': 73.04, 'heatindex7': 88.7, 'ch_aisle.7.humidity': 72.0,
              'lightning.count': 0.0, 'lightning.distance': 21.13, 'ch_soil.1.humidity': 32.0, 'ch_pm25.1.PM25': 11.0,
              'ch_temp.1.temp': 79.7, 'ch_lds.1.air': 1.60, 'ch_lds.1.depth': 5.06, 'ch_lds.1.heat': 2046.0,
-             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742512200.0, 'interval': 5},
+             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742523000.0, 'interval': 5},
             {'wh25.inhumi': 72.0, 'common_list.0x02.val': 70.88, 'common_list.0x07.val': 86.0,
              'common_list.0x03.val': 66.56, 'feelslike': 70.88, 'common_list.5.val': 0.1063,
              'common_list.0x0B.val': 1.5659, 'common_list.0x0C.val': 4.0265, 'common_list.0x0A.val': 228.0,
@@ -358,7 +358,7 @@ class DeviceCatchupTestCase(unittest.TestCase):
              'ch_aisle.7.temp': 83.12, 'dewpoint7': 73.22, 'heatindex7': 89.06, 'ch_aisle.7.humidity': 72.0,
              'lightning.count': 0.0, 'lightning.distance': 21.13, 'ch_soil.1.humidity': 32.0, 'ch_pm25.1.PM25': 11.0,
              'ch_temp.1.temp': 79.88, 'ch_lds.1.air': 1.67, 'ch_lds.1.depth': 4.99, 'ch_lds.1.heat': 2048.0,
-             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742512500.0, 'interval': 5},
+             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742523300.0, 'interval': 5},
             {'wh25.inhumi': 72.0, 'common_list.0x02.val': 70.7, 'common_list.0x07.val': 86.0,
              'common_list.0x03.val': 66.38, 'feelslike': 70.7, 'common_list.5.val': 0.1064,
              'common_list.0x0B.val': 2.0132, 'common_list.0x0C.val': 4.0265, 'common_list.0x0A.val': 234.0,
@@ -375,7 +375,7 @@ class DeviceCatchupTestCase(unittest.TestCase):
              'ch_aisle.7.temp': 83.48, 'dewpoint7': 73.58, 'heatindex7': 89.96, 'ch_aisle.7.humidity': 72.0,
              'lightning.count': 0.0, 'lightning.distance': 21.13, 'ch_soil.1.humidity': 32.0, 'ch_pm25.1.PM25': 10.0,
              'ch_temp.1.temp': 80.24, 'ch_lds.1.air': 1.65, 'ch_lds.1.depth': 5.01, 'ch_lds.1.heat': 2048.0,
-             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742512800.0, 'interval': 5}
+             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742523600.0, 'interval': 5}
         ],
         weewx.METRIC : [
             {'wh25.inhumi': 73.0, 'common_list.0x02.val': 21.7, 'common_list.0x07.val': 86.0,
@@ -394,7 +394,7 @@ class DeviceCatchupTestCase(unittest.TestCase):
              'ch_aisle.7.temp': 28.0, 'dewpoint7': 22.7, 'heatindex7': 31.0, 'ch_aisle.7.humidity': 73.0,
              'lightning.count': 0.0, 'lightning.distance': 34.0, 'ch_soil.1.humidity': 32.0, 'ch_pm25.1.PM25': 13.0,
              'ch_temp.1.temp': 26.2, 'ch_lds.1.air': 492.0, 'ch_lds.1.depth': 1538.0, 'ch_lds.1.heat': 2044.0,
-             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742511300.0, 'interval': 5},
+             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742522100.0, 'interval': 5},
             {'wh25.inhumi': 73.0, 'common_list.0x02.val': 21.7, 'common_list.0x07.val': 86.0,
              'common_list.0x03.val': 19.3, 'feelslike': 21.7, 'common_list.5.val': 3.6, 'common_list.0x0B.val': 2.88,
              'common_list.0x0C.val': 5.04, 'common_list.0x0A.val': 236.0, 'wh25.abs': 1011.8, 'wh25.rel': 1017.2,
@@ -411,7 +411,7 @@ class DeviceCatchupTestCase(unittest.TestCase):
              'ch_aisle.7.temp': 28.1, 'dewpoint7': 22.8, 'heatindex7': 31.3, 'ch_aisle.7.humidity': 73.0,
              'lightning.count': 0.0, 'lightning.distance': 34.0, 'ch_soil.1.humidity': 32.0, 'ch_pm25.1.PM25': 13.0,
              'ch_temp.1.temp': 26.4, 'ch_lds.1.air': 500.0, 'ch_lds.1.depth': 1530.0, 'ch_lds.1.heat': 2044.0,
-             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742511600.0, 'interval': 5},
+             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742522400.0, 'interval': 5},
             {'wh25.inhumi': 72.0, 'common_list.0x02.val': 21.7, 'common_list.0x07.val': 86.0,
              'common_list.0x03.val': 19.3, 'feelslike': 21.7, 'common_list.5.val': 3.6, 'common_list.0x0B.val': 0.0,
              'common_list.0x0C.val': 3.24, 'common_list.0x0A.val': 288.0, 'wh25.abs': 1011.7, 'wh25.rel': 1017.1,
@@ -428,7 +428,7 @@ class DeviceCatchupTestCase(unittest.TestCase):
              'ch_aisle.7.temp': 28.2, 'dewpoint7': 22.9, 'heatindex7': 31.5, 'ch_aisle.7.humidity': 73.0,
              'lightning.count': 0.0, 'lightning.distance': 34.0, 'ch_soil.1.humidity': 32.0, 'ch_pm25.1.PM25': 13.0,
              'ch_temp.1.temp': 26.5, 'ch_lds.1.air': 494.0, 'ch_lds.1.depth': 1536.0, 'ch_lds.1.heat': 2044.0,
-             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742511900.0, 'interval': 5},
+             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742522700.0, 'interval': 5},
             {'wh25.inhumi': 72.0, 'common_list.0x02.val': 21.6, 'common_list.0x07.val': 86.0,
              'common_list.0x03.val': 19.2, 'feelslike': 21.6, 'common_list.5.val': 3.6, 'common_list.0x0B.val': 5.4,
              'common_list.0x0C.val': 5.76, 'common_list.0x0A.val': 226.0, 'wh25.abs': 1011.9, 'wh25.rel': 1017.3,
@@ -445,7 +445,7 @@ class DeviceCatchupTestCase(unittest.TestCase):
              'ch_aisle.7.temp': 28.3, 'dewpoint7': 22.8, 'heatindex7': 31.5, 'ch_aisle.7.humidity': 72.0,
              'lightning.count': 0.0, 'lightning.distance': 34.0, 'ch_soil.1.humidity': 32.0, 'ch_pm25.1.PM25': 11.0,
              'ch_temp.1.temp': 26.5, 'ch_lds.1.air': 487.0, 'ch_lds.1.depth': 1543.0, 'ch_lds.1.heat': 2046.0,
-             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742512200.0, 'interval': 5},
+             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742523000.0, 'interval': 5},
             {'wh25.inhumi': 72.0, 'common_list.0x02.val': 21.6, 'common_list.0x07.val': 86.0,
              'common_list.0x03.val': 19.2, 'feelslike': 21.6, 'common_list.5.val': 3.6, 'common_list.0x0B.val': 2.52,
              'common_list.0x0C.val': 6.48, 'common_list.0x0A.val': 228.0, 'wh25.abs': 1011.9, 'wh25.rel': 1017.3,
@@ -462,7 +462,7 @@ class DeviceCatchupTestCase(unittest.TestCase):
              'ch_aisle.7.temp': 28.4, 'dewpoint7': 22.9, 'heatindex7': 31.7, 'ch_aisle.7.humidity': 72.0,
              'lightning.count': 0.0, 'lightning.distance': 34.0, 'ch_soil.1.humidity': 32.0, 'ch_pm25.1.PM25': 11.0,
              'ch_temp.1.temp': 26.6, 'ch_lds.1.air': 510.0, 'ch_lds.1.depth': 1520.0, 'ch_lds.1.heat': 2048.0,
-             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742512500.0, 'interval': 5},
+             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742523300.0, 'interval': 5},
             {'wh25.inhumi': 72.0, 'common_list.0x02.val': 21.5, 'common_list.0x07.val': 86.0,
              'common_list.0x03.val': 19.1, 'feelslike': 21.5, 'common_list.5.val': 3.6, 'common_list.0x0B.val': 3.24,
              'common_list.0x0C.val': 6.48, 'common_list.0x0A.val': 234.0, 'wh25.abs': 1011.8, 'wh25.rel': 1017.2,
@@ -479,7 +479,7 @@ class DeviceCatchupTestCase(unittest.TestCase):
              'ch_aisle.7.temp': 28.6, 'dewpoint7': 23.1, 'heatindex7': 32.2, 'ch_aisle.7.humidity': 72.0,
              'lightning.count': 0.0, 'lightning.distance': 34.0, 'ch_soil.1.humidity': 32.0, 'ch_pm25.1.PM25': 10.0,
              'ch_temp.1.temp': 26.8, 'ch_lds.1.air': 502.0, 'ch_lds.1.depth': 1528.0, 'ch_lds.1.heat': 2048.0,
-             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742512800.0, 'interval': 5}
+             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742523600.0, 'interval': 5}
         ],
         weewx.METRICWX: [
             {'wh25.inhumi': 73.0, 'common_list.0x02.val': 21.7, 'common_list.0x07.val': 86.0,
@@ -498,7 +498,7 @@ class DeviceCatchupTestCase(unittest.TestCase):
              'ch_aisle.7.temp': 28.0, 'dewpoint7': 22.7, 'heatindex7': 31.0, 'ch_aisle.7.humidity': 73.0,
              'lightning.count': 0.0, 'lightning.distance': 34.0, 'ch_soil.1.humidity': 32.0, 'ch_pm25.1.PM25': 13.0,
              'ch_temp.1.temp': 26.2, 'ch_lds.1.air': 492.0, 'ch_lds.1.depth': 1538.0, 'ch_lds.1.heat': 2044.0,
-             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742511300.0, 'interval': 5},
+             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742522100.0, 'interval': 5},
             {'wh25.inhumi': 73.0, 'common_list.0x02.val': 21.7, 'common_list.0x07.val': 86.0,
              'common_list.0x03.val': 19.3, 'feelslike': 21.7, 'common_list.5.val': 3.6, 'common_list.0x0B.val': 0.8,
              'common_list.0x0C.val': 1.4, 'common_list.0x0A.val': 236.0, 'wh25.abs': 1011.8, 'wh25.rel': 1017.2,
@@ -515,7 +515,7 @@ class DeviceCatchupTestCase(unittest.TestCase):
              'ch_aisle.7.temp': 28.1, 'dewpoint7': 22.8, 'heatindex7': 31.3, 'ch_aisle.7.humidity': 73.0,
              'lightning.count': 0.0, 'lightning.distance': 34.0, 'ch_soil.1.humidity': 32.0, 'ch_pm25.1.PM25': 13.0,
              'ch_temp.1.temp': 26.4, 'ch_lds.1.air': 500.0, 'ch_lds.1.depth': 1530.0, 'ch_lds.1.heat': 2044.0,
-             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742511600.0, 'interval': 5},
+             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742522400.0, 'interval': 5},
             {'wh25.inhumi': 72.0, 'common_list.0x02.val': 21.7, 'common_list.0x07.val': 86.0,
              'common_list.0x03.val': 19.3, 'feelslike': 21.7, 'common_list.5.val': 3.6, 'common_list.0x0B.val': 0.0,
              'common_list.0x0C.val': 0.9, 'common_list.0x0A.val': 288.0, 'wh25.abs': 1011.7, 'wh25.rel': 1017.1,
@@ -532,7 +532,7 @@ class DeviceCatchupTestCase(unittest.TestCase):
              'ch_aisle.7.temp': 28.2, 'dewpoint7': 22.9, 'heatindex7': 31.5, 'ch_aisle.7.humidity': 73.0,
              'lightning.count': 0.0, 'lightning.distance': 34.0, 'ch_soil.1.humidity': 32.0, 'ch_pm25.1.PM25': 13.0,
              'ch_temp.1.temp': 26.5, 'ch_lds.1.air': 494.0, 'ch_lds.1.depth': 1536.0, 'ch_lds.1.heat': 2044.0,
-             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742511900.0, 'interval': 5},
+             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742522700.0, 'interval': 5},
             {'wh25.inhumi': 72.0, 'common_list.0x02.val': 21.6, 'common_list.0x07.val': 86.0,
              'common_list.0x03.val': 19.2, 'feelslike': 21.6, 'common_list.5.val': 3.6, 'common_list.0x0B.val': 1.5,
              'common_list.0x0C.val': 1.6, 'common_list.0x0A.val': 226.0, 'wh25.abs': 1011.9, 'wh25.rel': 1017.3,
@@ -549,7 +549,7 @@ class DeviceCatchupTestCase(unittest.TestCase):
              'ch_aisle.7.temp': 28.3, 'dewpoint7': 22.8, 'heatindex7': 31.5, 'ch_aisle.7.humidity': 72.0,
              'lightning.count': 0.0, 'lightning.distance': 34.0, 'ch_soil.1.humidity': 32.0, 'ch_pm25.1.PM25': 11.0,
              'ch_temp.1.temp': 26.5, 'ch_lds.1.air': 487.0, 'ch_lds.1.depth': 1543.0, 'ch_lds.1.heat': 2046.0,
-             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742512200.0, 'interval': 5},
+             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742523000.0, 'interval': 5},
             {'wh25.inhumi': 72.0, 'common_list.0x02.val': 21.6, 'common_list.0x07.val': 86.0,
              'common_list.0x03.val': 19.2, 'feelslike': 21.6, 'common_list.5.val': 3.6, 'common_list.0x0B.val': 0.7,
              'common_list.0x0C.val': 1.8, 'common_list.0x0A.val': 228.0, 'wh25.abs': 1011.9, 'wh25.rel': 1017.3,
@@ -566,7 +566,7 @@ class DeviceCatchupTestCase(unittest.TestCase):
              'ch_aisle.7.temp': 28.4, 'dewpoint7': 22.9, 'heatindex7': 31.7, 'ch_aisle.7.humidity': 72.0,
              'lightning.count': 0.0, 'lightning.distance': 34.0, 'ch_soil.1.humidity': 32.0, 'ch_pm25.1.PM25': 11.0,
              'ch_temp.1.temp': 26.6, 'ch_lds.1.air': 510.0, 'ch_lds.1.depth': 1520.0, 'ch_lds.1.heat': 2048.0,
-             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742512500.0, 'interval': 5},
+             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742523300.0, 'interval': 5},
             {'wh25.inhumi': 72.0, 'common_list.0x02.val': 21.5, 'common_list.0x07.val': 86.0,
              'common_list.0x03.val': 19.1, 'feelslike': 21.5, 'common_list.5.val': 3.6, 'common_list.0x0B.val': 0.9,
              'common_list.0x0C.val': 1.8, 'common_list.0x0A.val': 234.0, 'wh25.abs': 1011.8, 'wh25.rel': 1017.2,
@@ -583,7 +583,7 @@ class DeviceCatchupTestCase(unittest.TestCase):
              'ch_aisle.7.temp': 28.6, 'dewpoint7': 23.1, 'heatindex7': 32.2, 'ch_aisle.7.humidity': 72.0,
              'lightning.count': 0.0, 'lightning.distance': 34.0, 'ch_soil.1.humidity': 32.0, 'ch_pm25.1.PM25': 10.0,
              'ch_temp.1.temp': 26.8, 'ch_lds.1.air': 502.0, 'ch_lds.1.depth': 1528.0, 'ch_lds.1.heat': 2048.0,
-             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742512800.0, 'interval': 5}
+             'ch_lds.2.heat': 0.0, 'ch_lds.3.heat': 0.0, 'ch_lds.4.heat': 0.0, 'datetime': 1742523600.0, 'interval': 5}
         ]
     }
     gen_history_results_count = 8255
@@ -2008,7 +2008,7 @@ def hex_to_bytes(hex_string):
 
 
 def suite(test_cases):
-    '''Create a TestSuite object containing the tests we are to perform.'''
+    """Create a TestSuite object containing the tests we are to perform."""
 
     # get a test loader
     loader = unittest.TestLoader()
@@ -2037,11 +2037,11 @@ def main():
 #                  ListsAndDictsTestCase, StationTestCase,
 #                  GatewayServiceTestCase, GatewayDriverTestCase)
 
-    usage = f'''{bcolors.BOLD}%(prog)s --help
+    usage = f"""{bcolors.BOLD}%(prog)s --help
                     --version
                     --test [--ip-address=IP_ADDRESS]
                            [-v|--verbose VERBOSITY]{bcolors.ENDC}
-    '''
+    """
     description = 'Test the Ecowitt HTTP driver code.'
     epilog = """You must ensure the WeeWX user modules are in your PYTHONPATH. For example:
 
