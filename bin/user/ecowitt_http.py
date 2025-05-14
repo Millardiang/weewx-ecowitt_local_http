@@ -822,14 +822,22 @@ class FieldMapper:
 
         # save our driver debug options
         self.driver_debug = driver_debug
+        # Depending on the model a WN32 TH sensor can override/provide indoor
+        # and/or outdoor TH data and outdoor pressure data to the device. The
+        # use of WN32 data by the device is transparent to the driver does not
+        # need to know what type of sensor (WN32 or something else) is
+        # providing this data. However, in terms of battery state the driver
+        # needs to know the sensor type so that sensor battery and signal state
+        # data can be reported against the correct sensor type.
+        self.wn32_indoor = weeutil.weeutil.tobool(mapper_config.get('wn32_indoor', False))
+        self.wn32_outdoor = weeutil.weeutil.tobool(mapper_config.get('wn32_outdoor', False))
         # obtain the default map we are to use
         def_map = default_map if default_map is not None else dict()
         # construct my field map
         self.field_map = self.construct_field_map(def_map=def_map,
                                                   **mapper_config)
 
-    @staticmethod
-    def construct_field_map(def_map, **config):
+    def construct_field_map(self, def_map, **config):
         """Construct a field map given a default field map and field map config.
 
         Returns a field map as defined by the field map definition and then
@@ -839,32 +847,58 @@ class FieldMapper:
         definitions exist the default map is returned.
 
         Returns an InvertibleMap object.
+
+    default_sensor_state_map = {
+        'wh25_batt': 'wh25.battery',
+        'wh25_sig': 'wh25.signal',
+        'wh26_batt': 'wh26.battery',
+        'wh26_sig': 'wh26.signal',
+        'wn31_ch1_batt': 'wn31.ch1.battery',
+        'wn31_ch1_sig': 'wn31.ch1.signal',
+
+
+
         """
 
-        # Depending on the model a WN32 TH sensor can override/provide indoor
-        # and/or outdoor TH data and outdoor pressure data to the device. The
-        # use of WN32 data by the device is transparent to the driver does not
-        # need to know what type of sensor (WN32 or something else) is
-        # providing this data. However, in terms of battery state the driver
-        # needs to know the sensor type so that sensor battery and signal state
-        # data can be reported against the correct sensor type.
-        wn32_indoor = weeutil.weeutil.tobool(config.get('wn32_indoor', False))
-        wn32_outdoor = weeutil.weeutil.tobool(config.get('wn32_outdoor', False))
         # Update the default map given the wn32 indoor/outdoor config. First
         # make sure the default map is an InvertibleMap object.
         default_map = InvertibleMap(def_map)
         # do we have an indoor WN32, if so update any WH25 battery and signal
         # mappings to reflect the WN32
-        if wn32_indoor:
+        if self.wn32_indoor:
+            # we have a WN32 indoor, iterate over the source fields for which
+            # we need to change the mapped dest field
             for source in ('wh25.battery', 'wh25.signal'):
+                # is the source field in the default map
                 if source in default_map.values():
-                    default_map.inverse[source] = '_'.join(['wn32', source.split('.', 1)[1]])
+                    # the source field is in the default map, obtain the
+                    # current dest field
+                    dest_field = default_map.inverse[source]
+                    # remove the current source field mapping
+                    _ = default_map.pop(dest_field)
+                    # construct the new dest field name, it is a simple
+                    # substitution in the old dest field name
+                    new_dest_field = dest_field.replace('wh25', 'wn32')
+                    # add the new mapping using the new dest field
+                    default_map[new_dest_field] = source
         # do we have an outdoor WN32 (a WN32P), if so update any WH26 battery
         # and signal mappings to reflect the WN32P
-        if wn32_outdoor:
+        if self.wn32_outdoor:
+            # we have a WN32P outdoor, iterate over the source fields for which
+            # we need to change the mapped dest field
             for source in ('wh26.battery', 'wh26.signal'):
+                # is the source field in the default map
                 if source in default_map.values():
-                    default_map.inverse[source] = '_'.join(['wn32p', source.split('.', 1)[1]])
+                    # the source field is in the default map, obtain the
+                    # current dest field
+                    dest_field = default_map.inverse[source]
+                    # remove the current source field mapping
+                    _ = default_map.pop(dest_field)
+                    # construct the new dest field name, it is a simple
+                    # substitution in the old dest field name
+                    new_dest_field = dest_field.replace('wh26', 'wn32p')
+                    # add the new mapping using the new dest field
+                    default_map[new_dest_field] = source
         # obtain the map from our config
         field_map = config.get('field_map')
         # if no map was provided use the default
@@ -1573,6 +1607,14 @@ class EcowittCommon:
             debug_list.append(f"parser debug is {self.driver_debug.loop}")
         if len(debug_list) > 0:
             log.info(' '.join(debug_list))
+        if self.mapper.wn32_indoor:
+            log.debug("     sensor ID decoding will use indoor 'WN32'")
+        else:
+            log.debug("     sensor ID decoding will use 'WH26'")
+        if self.mapper.wn32_outdoor:
+            log.debug("     sensor ID decoding will use outdoor 'WN32P'")
+        else:
+            log.debug("     sensor ID decoding will use 'WH26'")
 
         # create a EcowittHttpCollector object to interact with the device API,
         # if there is a problem our parent will handle any exceptions
@@ -4921,14 +4963,6 @@ class EcowittHttpCollector(Collector):
             log.debug('     available device firmware updates will be logged')
         else:
             log.debug('     device firmware update checks will not occur')
-        if wn32_indoor:
-            log.debug("     sensor ID decoding will use indoor 'WN32'")
-        else:
-            log.debug("     sensor ID decoding will use 'WH26'")
-        if wn32_outdoor:
-            log.debug("     sensor ID decoding will use outdoor 'WN32'")
-        else:
-            log.debug("     sensor ID decoding will use 'WH26'")
         if ignore_wh40_batt:
             log.debug('     battery state data will be ignored for legacy WH40')
         else:
