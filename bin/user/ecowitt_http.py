@@ -825,7 +825,7 @@ class FieldMapper:
         # obtain the default map we are to use
         def_map = default_map if default_map is not None else dict()
         # construct my field map
-        self.field_map = self.construct_field_map(default_map=def_map,
+        self.field_map = self.construct_field_map(def_map=def_map,
                                                   **mapper_config)
 
     @staticmethod
@@ -4090,13 +4090,13 @@ class EcowittDeviceCatchup:
         # iterate over the keys in the record
         for _key in keys:
             # do all our unit label comparisons in lower case to guard against
-            # firmware changes that might (inadvertantly or deliberately)
+            # firmware changes that might (inadvertently or deliberately)
             # change the case of unit labels in SD card files
             key = _key.lower()
             # For temperature we check for keys containing 'Temperature'. Is
             # the key a 'temperature' and have we already set group_temperature
             # units.
-            if 'Temperature' in key and 'group_temperature' not in units:
+            if 'temperature' in key and 'group_temperature' not in units:
                 # we have a 'temperature' for the first time
                 if 'c)' in key or chr(8451) in key:
                     # we have temperature in C (chr(8451) is a legacy unit
@@ -4113,7 +4113,7 @@ class EcowittDeviceCatchup:
                 continue
             # For pressure we check for keys containing 'Pressure'. Is the key
             # a 'pressure' and have we already set group_pressure units.
-            if 'Pressure' in key and 'group_pressure' not in units:
+            if 'pressure' in key and 'group_pressure' not in units:
                 # we have a 'pressure' for the first time
                 if '(hpa)' in key:
                     # we have speed in hPa
@@ -4133,7 +4133,7 @@ class EcowittDeviceCatchup:
                 continue
             # For speed we check for keys containing 'Gust'. Is the key a
             # 'speed' and have we already set group_speed units.
-            if 'Gust' in key and 'group_speed' not in units:
+            if 'gust' in key and 'group_speed' not in units:
                 # we have a 'speed' for the first time
                 if '(km/h)' in key:
                     # we have speed in km/h
@@ -4183,7 +4183,7 @@ class EcowittDeviceCatchup:
                 continue
             # For rain we check for keys containing 'Rain'. Is the key a 'rain'
             # and have we already set group_rain units.
-            if 'Rain' in key and 'group_rain' not in units:
+            if 'rain' in key and 'group_rain' not in units:
                 # we have a 'rain' for the first time
                 if '(mm)' in key:
                     # we have rain in mm
@@ -4208,7 +4208,7 @@ class EcowittDeviceCatchup:
             # group_illuminance. Consequently, for 'illuminance' we need to
             # look for a Solar Radiation field. Is the key a 'Solar Radiation'
             # and have we already set group_illuminance units.
-            if 'Solar Rad' in key and 'group_illuminance' not in units:
+            if 'solar rad' in key and 'group_illuminance' not in units:
                 # we have a 'Solar Radiation' for the first time
                 if '(w/m2)' in key:
                     # we have ?? in W/m2
@@ -4248,7 +4248,7 @@ class EcowittDeviceCatchup:
                 continue
             # For depth we check for keys containing 'LDS'. Is the key a
             # 'depth' and have we already set group_depth units.
-            if 'LDS' in key and 'group_depth' not in units:
+            if 'lds' in key and 'group_depth' not in units:
                 # we have a 'depth' for the first time
                 if '(mm)' in key:
                     # we have depth in mm
