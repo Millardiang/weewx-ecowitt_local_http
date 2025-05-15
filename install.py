@@ -10,7 +10,7 @@ PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
                  Installer for Ecowitt Local HTTP API Driver
 
-Version: 0.1.0a25                                       Date: xx May 2025
+Version: 0.1.0a27                                       Date: xx May 2025
 
 Revision History
     xx May 2025      v0.1.0
@@ -27,7 +27,7 @@ import weewx
 
 
 REQUIRED_WEEWX_VERSION = "5.0.0"
-DRIVER_VERSION = "0.1.0a25"
+DRIVER_VERSION = "0.1.0a27"
 # define our config as a multiline string so we can preserve comments
 ecowitt_config = """
 [EcowittHttp]

@@ -8,7 +8,7 @@ The test suite tests correct operation of:
 
 -
 
-Version: 0.1.0a26                                 Date: ? May 2025
+Version: 0.1.0a27                                 Date: ? May 2025
 
 Revision History
     ?? May 2025       v0.1.0
@@ -57,7 +57,7 @@ import user.ecowitt_http
 # TODO. Add decode display_firmware check refer issue #31
 
 TEST_SUITE_NAME = 'Ecowitt HTTP driver'
-TEST_SUITE_VERSION = '0.1.0a26'
+TEST_SUITE_VERSION = '0.1.0a27'
 
 
 class bcolors:
