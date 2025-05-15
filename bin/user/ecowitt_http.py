@@ -18,7 +18,7 @@ PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with
 this program.  If not, see https://www.gnu.org/licenses/.
 
-Version: 0.1.0a26                                  Date: X May 2025
+Version: 0.1.0a27                                  Date: X May 2025
 
 Revision History
     X May 2025            v0.1.0
@@ -133,7 +133,7 @@ log = logging.getLogger(__name__)
 
 
 DRIVER_NAME = 'EcowittHttp'
-DRIVER_VERSION = '0.1.0a26'
+DRIVER_VERSION = '0.1.0a27'
 
 # device models that are supported by the driver
 SUPPORTED_DEVICES = ('GW1100', 'GW1200', 'GW2000',
@@ -2450,21 +2450,21 @@ class EcowittHttpDriverConfEditor(weewx.drivers.AbstractConfEditor):
         debug_sensors = False
     """
 
-    def get_conf(self, orig_stanza=None):
-        """Given a configuration stanza, return a possibly modified copy
-        that will work with the current version of the device driver.
-
-        The default behavior is to return the original stanza, unmodified.
-
-        Derived classes should override this if they need to modify previous
-        configuration options or warn about deprecated or harmful options.
-
-        The return value should be a long string. See default_stanza above
-        for an example string stanza.
-        """
-
-        return self.default_stanza if orig_stanza is None else orig_stanza
-
+    # def get_conf(self, orig_stanza=None):
+    #     """Given a configuration stanza, return a possibly modified copy
+    #     that will work with the current version of the device driver.
+    #
+    #     The default behavior is to return the original stanza, unmodified.
+    #
+    #     Derived classes should override this if they need to modify previous
+    #     configuration options or warn about deprecated or harmful options.
+    #
+    #     The return value should be a long string. See default_stanza above
+    #     for an example string stanza.
+    #     """
+    #
+    #     return self.default_stanza if orig_stanza is None else orig_stanza
+    #
     def prompt_for_settings(self):
         """Prompt for settings required for proper operation of this driver.
 
@@ -8284,11 +8284,18 @@ class EcowittHttpParser:
                                            unit_group='group_distance')
         except KeyError as e:
             # the 'distance' key does not exist, we cannot continue with this
-            # sensor
+            # sensor key
             pass
+        except UnitError as e:
+            # The 'distance' key exists, but there was a problem obtaining the
+            # unit. Log it and set the 'distance' key/value to None.
+            log.error("process_lightning_array: Error processing distance "
+                           "unit: %s", e)
+            _item['distance'] = None
         except  ParseError as e:
-            # the 'distance' key exists but there was a problem processing the
-            # data, set the 'distance' key/value to None
+            # The 'distance' key exists but there was a problem processing the
+            # data. Log it and set the 'distance' key/value to None
+            log.error("process_lightning_array: Error processing distance: %s", e)
             _item['distance'] = None
         else:
             # we have a numeric value, convert it to the unit system used by
@@ -8370,25 +8377,37 @@ class EcowittHttpParser:
         for item in response:
             # make a copy of the current item as we will be modifying it
             _item = dict(item)
+            # temperature
             if 'temp' in _item:
-                # we have a 'temp' field, now obtain the WeeWX unit applicable to
-                # the Ecowitt unit string in the 'unit' field
-                src_unit = self.get_weewx_unit(item['unit'], 'group_temperature')
-                # Construct a ValueTuple from the temperature and unit data, we
-                # need this to do any necessary unit conversion. Wrap in a
-                # try..except in case there is a problem.
+                # We have a 'temp' field, now obtain the WeeWX unit applicable
+                # to the Ecowitt unit string in the 'unit' field. Be prepared
+                # to catch the exception if we have an invalid or unknown unit
+                # string.
                 try:
-                    temp_vt = weewx.units.ValueTuple(float(item['temp']),
-                                                     src_unit,
-                                                     'group_temperature')
-                except (TypeError, ValueError):
-                    # the 'temp' field could not be converted to a float, so
-                    # save None to the 'temp' field
+                    src_unit = self.get_weewx_unit(item['unit'],
+                                                   'group_temperature')
+                except UnitError as e:
+                    # an unknown Ecowitt unit string was encountered, log it,
+                    # set the 'temp' field to None and continue
+                    log.error("process_co2_array: Error processing temperature "
+                              "unit: %s", e)
                     _item['temp'] = None
                 else:
-                    # convert to the appropriate unit and save in the 'temp' field
-                    _item['temp'] = weewx.units.convert(temp_vt,
-                                                        weewx.units.std_groups[self.unit_system]['group_temperature']).value
+                    # Construct a ValueTuple from the temperature and unit data, we
+                    # need this to do any necessary unit conversion. Wrap in a
+                    # try..except in case there is a problem.
+                    try:
+                        temp_vt = weewx.units.ValueTuple(float(item['temp']),
+                                                         src_unit,
+                                                         'group_temperature')
+                    except (TypeError, ValueError):
+                        # the 'temp' field could not be converted to a float, so
+                        # save None to the 'temp' field
+                        _item['temp'] = None
+                    else:
+                        # convert to the appropriate unit and save in the 'temp' field
+                        _item['temp'] = weewx.units.convert(temp_vt,
+                                                            weewx.units.std_groups[self.unit_system]['group_temperature']).value
             # humidity
             if 'humidity' in item:
                 # we have a 'humidity' field, extract the humidity value from
@@ -9516,47 +9535,57 @@ class EcowittHttpParser:
             raise ParseError("Could not convert '%s' to a float" % _value)
         # process the unit
         if len(_unit) > 0:
-            # we have a unit string, determine the applicable WeeWX unit
-            weewx_unit = self.get_weewx_unit(_unit, unit_group=unit_group)
-            # if we have a WeeWX unit construct and return a ValueTuple,
-            # otherwise raise a ParseError
-            if weewx_unit is not None:
-                return weewx.units.ValueTuple(_numeric, weewx_unit, unit_group)
-            else:
-                # we have an Ecowitt unit string we could not match to a WeeWX
-                # unit, raise a UnitError with a suitable message
+            # We have a unit string, determine the applicable WeeWX unit. Be
+            # prepared to catch the exception if we have an unknown unit
+            # string.
+            try:
+                weewx_unit = self.get_weewx_unit(_unit, unit_group=unit_group)
+            except UnitError as e:
+                # we have an unknown unit string, log it and raise a ParseError
+                log.error("parse_obs_value: Could not determine unit applicable to field '%s: %s': %s",
+                          key, _numeric, e)
+                # raise a ParseError with a suitable message
                 raise ParseError(f"Could not equate Ecowitt unit '{_unit}' with "
                                  f"a WeeWX unit")
+            else:
+                # we have a WeeWX unit, construct and return a ValueTuple
+                return weewx.units.ValueTuple(_numeric, weewx_unit, unit_group)
         else:
             # we could not extract the unit string from the key value, look for a
             # 'unit' key in the JSON object
             if 'unit' in json_object.keys():
-                # the 'unit' key exists, use it's content to determine the
-                # WeeWX unit string
-                weewx_unit = self.get_weewx_unit(json_object['unit'],
-                                                 unit_group=unit_group)
-                if weewx_unit is not None:
-                    # if we have a WeeWX unit construct and return a ValueTuple,
-                    # otherwise raise a ParseError
-                    return weewx.units.ValueTuple(_numeric, weewx_unit, unit_group)
+                # The 'unit' key exists, use it's content to determine the
+                # WeeWX unit string. Be prepared to catch the exception if we
+                # have an unknown unit string.
+                try:
+                    weewx_unit = self.get_weewx_unit(json_object['unit'],
+                                                     unit_group=unit_group)
+                except UnitError as e:
+                    # we have an unknown unit string, log it and raise a
+                    # ParseError
+                    _msg = f"unknown Ecowitt unit string '{json_object['unit']}' in field 'unit'"
+                    log.error("parse_obs_value: Could not determine unit applicable to field '%s: %s': %s",
+                              key, _numeric, _msg)
+                    # raise a ParseError with a suitable message
+                    raise ParseError(f"Could2 not equate Ecowitt unit '{json_object['unit']}' with "
+                                     f"a WeeWX unit")
                 else:
-                    # we have an Ecowitt unit string we could not match to a WeeWX
-                    # unit, raise a ParseError with a suitable message
-                    raise ParseError(f"Could not equate 'unit' value of '{_unit}' "
-                                     f"with a WeeWX unit")
+                    # we have a WeeWX unit, construct and return a ValueTuple
+                    return weewx.units.ValueTuple(_numeric, weewx_unit, unit_group)
             else:
                 # we have no 'unit' key and we cannot extract the unit from a
                 # field in the JSON object, do we have a device_units dict
                 if device_units is not None:
                     # determine the WeeWX unit string
-                    weewx_unit = device_units.get(unit_group)
-                    if weewx_unit is not None:
-                        return weewx.units.ValueTuple(_numeric, weewx_unit, unit_group)
-                    else:
+                    try:
+                        weewx_unit = device_units[unit_group]
+                    except KeyError:
                         # we have a unit group that is not a key in device_units,
                         # raise a ParseError with a suitable message
-                        raise ParseError(f"Could not determine device units "
+                        raise UnitError(f"Could not determine device units "
                                          f"for '{unit_group}'")
+                    else:
+                        return weewx.units.ValueTuple(_numeric, weewx_unit, unit_group)
                 else:
                     # we do not have device_units lookup data, raise a
                     # ParseError with a suitable message
@@ -9564,27 +9593,54 @@ class EcowittHttpParser:
 
     @staticmethod
     def get_weewx_unit(unit_string, unit_group=None):
-        """Determine the correct WeeWX unit given a unit string and WeeWX unit group."""
+        """Determine the WeeWX unit given a unit group and Ecowitt unit string.
 
-        if unit_string is not None:
-            try:
-                # lookup the WeeWX unit given the unit string
-                _unit = EcowittHttpParser.unit_lookup[unit_string.lower()]
-            except (KeyError, AttributeError):
-                # we have no knowledge of this unit_string, so return None
-                _unit = None
-            else:
-                # we have a WeeWX unit based on the 'Ecowitt' unit string, but
-                # do we need to make any changes given the unit group
-                if unit_group is not None:
-                    if unit_group.lower() == 'group_depth':
-                        _unit = ''.join([_unit, '2'])
-                    elif unit_group.lower() == 'group_deltat':
-                        _unit = ''.join([_unit, '2'])
+        Ecowitt uses various unit strings in API responses to indicate the
+        units used by a particular value. These units strings are not
+        necessarily the same as used by WeeWX meaning that some form of
+        translation is required.
+
+        This method uses a look-up table to determine the equivalent WeeWX unit
+        from an Ecowitt unit string. If the Ecowitt unit string is not a key in
+        the look-up table a UnitError is raised with details on the unknown
+        unit string.
+
+        The Ecowitt HTTP driver implements a number of additional unit groups
+        and units to support obs available from Ecowitt devices that are not
+        available under WeeWX. As some of these unit groups use units similar
+        to WeeWX but requiring different properties, eg unit conversion
+        formulae (eg delta temperature), some units also depend on the unit
+        group being used.
+
+        Returns a WeeWX unit or raises a UnitError if no WeeWX unit could be
+        determined.
+        """
+
+        # obtain the WeeWX unit equivalent of the Ecowitt unit string, wrap in
+        # a try..except in case an unknown unit string is encountered
+        try:
+            # lookup the WeeWX unit given the unit string
+            _unit = EcowittHttpParser.unit_lookup[unit_string.lower()]
+        except (AttributeError, KeyError):
+            # we do not know about this unit string or it could not be
+            # converted to a lower, either way it is unknown so raise a
+            # UnitError exception with an appropriate message
+            raise UnitError("unknown Ecowitt unit string: '%s'" % unit_string)
         else:
-            # the unit string is None so return None
-            _unit = None
-        return _unit
+            # we have a WeeWX unit based on the Ecowitt unit string, but
+            # do we need to make any changes given the unit group
+            if unit_group is not None:
+                if unit_group.lower() == 'group_depth':
+                    # our group_depth uses a hybrid mixture of group_rain and
+                    # group_altitude units, we delineate these units by
+                    # appending a '2'
+                    _unit = ''.join([_unit, '2'])
+                elif unit_group.lower() == 'group_deltat':
+                    # our group_deltat uses the same units as
+                    # group_temperature, but with a '2' appended
+                    _unit = ''.join([_unit, '2'])
+            # return the WeeWX unit
+            return _unit
 
 
 # ============================================================================
