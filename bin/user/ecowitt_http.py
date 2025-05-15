@@ -10598,6 +10598,46 @@ class EcowittDevice:
         # return the results dict
         return fw_data
 
+    @property
+    def attached_rain_gauges(self):
+        """Obtain attached rain gauge types.
+
+        Returns a tuple containing the types of attached rain gauges. An
+        Ecowitt device may have either a tipping rain gauge, a piezoelectric
+        (piezo) rain gauge, both tipping and piezo rain gauges or no rain gauge
+        attached. A rain gauge is considered attached if the gauge is included
+        in a 'get_sensors_info' response and the ID key/value is not
+        disabled ('FFFFFFFE') or is registering ('FFFFFFFF').
+
+        Known rain gauge models and their type are:
+
+            WH40: tipping gauge
+            WH69: tipping gauge
+            WS85: piezo gauge
+            WS90: piezo gauge
+
+        Returns a tuple. Possible responses are:
+
+            ()                  - no rain gauges are attached
+            ('tipping',)        - a tipping gauge only is attached
+            ('piezo',)          - a piezo gauge only is attached
+            ('tipping', 'piezo) - both a tipping and piezo gauge is attached
+        """
+
+        # initialise a set to hold our result, we will convert to a tuple later
+        result = set()
+        # obtain the parse 'get_sensors_info' response
+        sensor_info = self.get_sensors_data(connected_only=True,
+                                            flatten_data=False)
+        # do we have a tipping gauge
+        if 'wh69' in sensor_info.keys() or 'wh40' in sensor_info.keys():
+            result.add('tipping')
+        # do we have a piezo gauge
+        if 'ws85' in sensor_info.keys() or 'ws90' in sensor_info.keys():
+            result.add('piezo')
+        # return the result as a tuple
+        return tuple(result)
+
 
 # ============================================================================
 #                             Utility functions
