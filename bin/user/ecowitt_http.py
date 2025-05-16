@@ -2451,21 +2451,6 @@ class EcowittHttpDriverConfEditor(weewx.drivers.AbstractConfEditor):
         debug_sensors = False
     """
 
-    # def get_conf(self, orig_stanza=None):
-    #     """Given a configuration stanza, return a possibly modified copy
-    #     that will work with the current version of the device driver.
-    #
-    #     The default behavior is to return the original stanza, unmodified.
-    #
-    #     Derived classes should override this if they need to modify previous
-    #     configuration options or warn about deprecated or harmful options.
-    #
-    #     The return value should be a long string. See default_stanza above
-    #     for an example string stanza.
-    #     """
-    #
-    #     return self.default_stanza if orig_stanza is None else orig_stanza
-    #
     def prompt_for_settings(self):
         """Prompt for settings required for proper operation of this driver.
 
