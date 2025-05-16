@@ -5304,7 +5304,7 @@ class EcowittHttpApi:
         try:
             return self.request('get_version')
         except (socket.timeout, urllib.error.URLError) as e:
-            raise DeviceIOError("Failed to obtain 'get_version' data: {e}")
+            raise DeviceIOError(f"Failed to obtain 'get_version' data: {e}")
 
     def get_livedata_info(self):
         """Get live sensor data from the device.
@@ -5314,7 +5314,7 @@ class EcowittHttpApi:
         try:
             return self.request('get_livedata_info')
         except (socket.timeout, urllib.error.URLError) as e:
-            raise DeviceIOError("Failed to obtain 'get_livedata_info' data: {e}")
+            raise DeviceIOError(f"Failed to obtain 'get_livedata_info' data: {e}")
 
     def get_ws_settings(self):
         """Get weather services settings from the device.
@@ -5324,7 +5324,7 @@ class EcowittHttpApi:
         try:
             return self.request('get_ws_settings')
         except (socket.timeout, urllib.error.URLError) as e:
-            raise DeviceIOError("Failed to obtain 'get_ws_settings' data: {e}")
+            raise DeviceIOError(f"Failed to obtain 'get_ws_settings' data: {e}")
 
     def get_calibration_data(self):
         """Get calibration settings from the device.
@@ -5334,7 +5334,7 @@ class EcowittHttpApi:
         try:
             return self.request('get_calibration_data')
         except (socket.timeout, urllib.error.URLError) as e:
-            raise DeviceIOError("Failed to obtain 'get_calibration_data' data: {e}")
+            raise DeviceIOError(f"Failed to obtain 'get_calibration_data' data: {e}")
 
     def get_rain_totals(self):
         """Get rainfall totals and settings from the device.
@@ -5344,7 +5344,7 @@ class EcowittHttpApi:
         try:
             return self.request('get_rain_totals')
         except (socket.timeout, urllib.error.URLError) as e:
-            raise DeviceIOError("Failed to obtain 'get_rain_totals' data: {e}")
+            raise DeviceIOError(f"Failed to obtain 'get_rain_totals' data: {e}")
 
     def get_device_info(self):
         """Get device settings from the device.
@@ -5354,7 +5354,7 @@ class EcowittHttpApi:
         try:
             return self.request('get_device_info')
         except (socket.timeout, urllib.error.URLError) as e:
-            raise DeviceIOError("Failed to obtain 'get_device_info' data: {e}")
+            raise DeviceIOError(f"Failed to obtain 'get_device_info' data: {e}")
 
     def get_sensors_info(self, page=0):
         """Get sensor ID data from the device.
@@ -5377,12 +5377,12 @@ class EcowittHttpApi:
             try:
                 page_1 = self.request('get_sensors_info', data={'page': 1})
             except (socket.timeout, urllib.error.URLError):
-                raise DeviceIOError("Failed to obtain 'get_sensors_info' page 1 data: {e}")
+                raise DeviceIOError(f"Failed to obtain 'get_sensors_info' page 1 data: {e}")
         if page in [0, 2]:
             try:
                 page_2 = self.request('get_sensors_info', data={'page': 2})
             except (socket.timeout, urllib.error.URLError):
-                raise DeviceIOError("Failed to obtain 'get_sensors_info' page 2 data: {e}")
+                raise DeviceIOError(f"Failed to obtain 'get_sensors_info' page 2 data: {e}")
         if page_1 is not None and page_2 is not None:
             return page_1 + page_2
         if page_1 is None:
@@ -5398,7 +5398,7 @@ class EcowittHttpApi:
         try:
             return self.request('get_network_info')
         except (socket.timeout, urllib.error.URLError) as e:
-            raise DeviceIOError("Failed to obtain 'get_network_info' data: {e}")
+            raise DeviceIOError(f"Failed to obtain 'get_network_info' data: {e}")
 
     def get_units_info(self):
         """Get units settings from the device.
@@ -5409,7 +5409,7 @@ class EcowittHttpApi:
         try:
             return self.request('get_units_info')
         except (socket.timeout, urllib.error.URLError) as e:
-            raise DeviceIOError("Failed to obtain 'get_units_info' data: {e}")
+            raise DeviceIOError(f"Failed to obtain 'get_units_info' data: {e}")
 
     def get_cli_soilad(self):
         """Get multichannel soil moisture sensor calibration data from the device.
@@ -5421,7 +5421,7 @@ class EcowittHttpApi:
         try:
             return self.request('get_cli_soilad')
         except (socket.timeout, urllib.error.URLError) as e:
-            raise DeviceIOError("Failed to obtain 'get_cli_soilad' data: {e}")
+            raise DeviceIOError(f"Failed to obtain 'get_cli_soilad' data: {e}")
 
     def get_cli_multi_ch(self):
         """Get multichannel temperature/humidity sensor calibration data from
@@ -5434,7 +5434,7 @@ class EcowittHttpApi:
         try:
             return self.request('get_cli_multiCh')
         except (socket.timeout, urllib.error.URLError) as e:
-            raise DeviceIOError("Failed to obtain 'get_cli_multiCh' data: {e}")
+            raise DeviceIOError(f"Failed to obtain 'get_cli_multiCh' data: {e}")
 
     def get_cli_pm25(self):
         """Get PM2.5 sensor offset data from the device.
@@ -5446,7 +5446,7 @@ class EcowittHttpApi:
         try:
             return self.request('get_cli_pm25')
         except (socket.timeout, urllib.error.URLError) as e:
-            raise DeviceIOError("Failed to obtain 'get_cli_pm25' data: {e}")
+            raise DeviceIOError(f"Failed to obtain 'get_cli_pm25' data: {e}")
 
     def get_cli_co2(self):
         """Get CO2 sensor offset data from the device.
@@ -5458,7 +5458,7 @@ class EcowittHttpApi:
         try:
             return self.request('get_cli_co2')
         except (socket.timeout, urllib.error.URLError) as e:
-            raise DeviceIOError("Failed to obtain 'get_cli_co2' data: {e}")
+            raise DeviceIOError(f"Failed to obtain 'get_cli_co2' data: {e}")
 
     def get_piezo_rain(self):
         """Get piezo rain sensor data/settings from the device.
@@ -5469,7 +5469,7 @@ class EcowittHttpApi:
         try:
             return self.request('get_piezo_rain')
         except (socket.timeout, urllib.error.URLError) as e:
-            raise DeviceIOError("Failed to obtain 'get_piezo_rain' data: {e}")
+            raise DeviceIOError(f"Failed to obtain 'get_piezo_rain' data: {e}")
 
     def get_cli_wh34(self):
         """Get WN34 sensor offset data from the device.
@@ -5481,7 +5481,7 @@ class EcowittHttpApi:
         try:
             return self.request('get_cli_wh34')
         except (socket.timeout, urllib.error.URLError) as e:
-            raise DeviceIOError("Failed to obtain 'get_cli_wh34' data: {e}")
+            raise DeviceIOError(f"Failed to obtain 'get_cli_wh34' data: {e}")
 
     def get_cli_lds(self):
         """Get laser distance sensor (WH54) sensor offset data from the device.
@@ -5493,7 +5493,7 @@ class EcowittHttpApi:
         try:
             return self.request('get_cli_lds')
         except (socket.timeout, urllib.error.URLError) as e:
-            raise DeviceIOError("Failed to obtain 'get_cli_lds' data: {e}")
+            raise DeviceIOError(f"Failed to obtain 'get_cli_lds' data: {e}")
 
     def get_sdmmc_info(self):
         """Get SD card info from the device.
@@ -5504,7 +5504,7 @@ class EcowittHttpApi:
         try:
             return self.request('get_sdmmc_info')
         except (socket.timeout, urllib.error.URLError) as e:
-            raise DeviceIOError("Failed to obtain 'get_sdmmc_info' data: {e}")
+            raise DeviceIOError(f"Failed to obtain 'get_sdmmc_info' data: {e}")
 
 
 # ============================================================================
