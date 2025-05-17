@@ -2549,7 +2549,7 @@ startup once only or '1' to attempt startup indefinitely."""
         try:
             device = EcowittDevice(ip_address=ip_address)
         except weewx.ViolatedPrecondition:
-            paired_str = 'none'
+            raise
         else:
             # and finally get the paired_rain_gauges property
             paired = device.paired_rain_gauges
@@ -2562,6 +2562,7 @@ piezoelectric (piezo) rain gauges. Select the gauge type(s) paired with this dev
 to 'none' if no gauges are paired, 'tipping' if only a tipping gauge is paired, 
 'piezo' if only a piezo gauge is paired or 'both' if both a tipping gauge and a 
 piezo gauge are paired."""
+        # format the prompt string to a 80 character wide multiline string
         prompt = '\n'.join([i for i in textwrap.wrap(_prompt, 80, break_long_words=False)])
         print()
         # obtain the user rain gauge type(s) paired with the device
@@ -2569,6 +2570,8 @@ piezo gauge are paired."""
                                                    paired_str,
                                                    ['none', 'tipping', 'piezo', 'both']).lower()
         if len(paired) > 0:
+            # we have a least one paired gauge
+
             # Get a HttpMapper object so we can access the field map being used. We
             # need the field map so we can 'talk' WeeWX field names with the
             # user - the user does not necessarily know the 'dotted' Ecowitt field
@@ -2582,20 +2585,21 @@ piezo gauge are paired."""
             # get the Ecowitt field used to derive the 'cumulative' key used to
             # calculate 'rain', if there isn't such a WeeWX field then use None
             curr_rain_e_src = mapper.field_map.get(curr_rain_w_src) if curr_rain_w_src is not None else None
-            # Determine the rain gauge type in use, it will be either 'tipping'
-            # or 'piezo'. If we can't determine the type then use the string
-            # 'none'.
+            # Determine the rain gauge type used to calculate 'rain', it will
+            # be either 'tipping' or 'piezo'. If we can't determine the type
+            # then use the string 'none'.
             curr_gauge_type = 'none'
             if curr_rain_w_src is not None:
                 if curr_rain_e_src in EcowittHttpDriverConfEditor.t_src_fields:
                     curr_gauge_type = 'tipping'
                 elif curr_rain_e_src in EcowittHttpDriverConfEditor.p_src_fields:
                     curr_gauge_type = 'piezo'
-            # Now we can determine the preferred WeeWX field name for tipping
-            # and piezo gauges, it is the available cumulative rain field with the
-            # longest reset interval. If no field is available (unlikely) then use
-            # None.
-            # set our preferred tipping field name to None until we find a field
+            # Now determine the preferred WeeWX field name for tipping and
+            # piezo gauges. The preferred field is the available cumulative
+            # rain field with the longest reset interval. If no field is
+            # available (unlikely) then use None.
+            # tipping, set our preferred tipping field name to None until we
+            # find a field
             pref_t_field = None
             # iterate over the possible Ecowitt tipping source fields
             for _field in EcowittHttpDriverConfEditor.t_src_fields:
@@ -2607,7 +2611,8 @@ piezo gauge are paired."""
                     pref_t_field = mapper.field_map.inverse[_field]
                     # no need to search further, break out of the loop
                     break
-            # set our preferred piezo field name to None until we find a field
+            # piezo, set our preferred tipping field name to None until we find
+            # a field
             pref_p_field = None
             # iterate over the possible Ecowitt piezo source fields
             for _field in EcowittHttpDriverConfEditor.p_src_fields:
@@ -2626,40 +2631,46 @@ piezo gauge are paired."""
             # to be added back to StdWXCalculate if the user changes from 'tipping'
             # to 'none' or 'piezo' to 'none'
             add_back = None
-            # construct the prompt text
+            # construct the prompt text, the prompt text will vary depending on
+            # what gauges are paired
             if len(paired_gauges) > 1:
                 select_1 = "'tipping' to populate the WeeWX rain fields from a paired tipping gauge"
                 select_2 = "'piezo' to populate the WeeWX rain fields from a paired piezo gauge"
                 select_3 = "'none' to not populate the WeeWX rain fields"
                 punc = ", "
                 conj = " or "
+                possible = ['tipping', 'piezo', 'none']
             elif paired_gauges[0] == 'tipping':
                 select_1 = "'tipping' to populate the WeeWX rain fields from a paired tipping gauge"
                 select_2 = ""
                 select_3 = "'none' to not populate the WeeWX rain fields"
                 punc = ""
                 conj = " or "
+                possible = ['tipping', 'none']
             elif paired_gauges[0] == 'piezo':
                 select_1 = ""
                 select_2 = "'piezo' to populate the WeeWX rain fields from a paired piezo gauge"
                 select_3 = "'none' to not populate the WeeWX rain fields"
                 punc = ""
                 conj = " or "
+                possible = ['piezo', 'none']
             selection_str = f"Set to {select_1}{punc}{select_2}{conj}{select_3}."
+            # now construct the overall prompt string
             _prompt = f"""By default, per-period rainfall values and rain rates will appear in
 fields 't_rain'/'t_rainrate' and 'p_rain'/'p_rainrate for paired tipping and 
-piezo rain gauges respectively. WeeWX can populate the default WeeWX rain fields 
+piezo rain gauges respectively. WeeWX can populate the default WeeWX rain observations 
 ('rain' and 'rainRate') from either a paired tipping or piezo rain gauge. {selection_str}"""
+            # format the prompt string to a 80 character wide multiline string
             prompt = '\n'.join([i for i in textwrap.wrap(_prompt, 80, break_long_words=False)])
             print()
             # obtain the user rain gauge type being used
             user_gauge_type = weecfg.prompt_with_options(prompt,
                                                          curr_gauge_type,
-                                                         ['tipping', 'piezo', 'none']).lower()
+                                                         possible).lower()
             # given the rain gauge type selected, obtain the source field to be
             # used to calculate WeeWX field 'rain'
             if user_gauge_type in ('tipping', 'piezo'):
-                if user_gauge_type.lower() == 'tipping':
+                if user_gauge_type == 'tipping':
                     # a tipping rainfall gauge was chosen
 
                     # Get the default WeeWX source field, it is the WeeWX field
@@ -2693,7 +2704,7 @@ piezo rain gauges respectively. WeeWX can populate the default WeeWX rain fields
                     # set the Ecowitt field to be used to map to WeeWX field
                     # rainRate
                     rate_field = 'rain.0x0E.val'
-                elif user_gauge_type.lower() == 'piezo':
+                else:
                     # a piezo rainfall gauge was chosen
 
                     # Get the default WeeWX source field, it is the WeeWX field
@@ -2734,11 +2745,13 @@ piezo rain gauges respectively. WeeWX can populate the default WeeWX rain fields
                     options = ' or '.join([_first, _fields[-1]])
                 # construct the prompt text to use, it includes a list of the
                 # available possible fields
-                field_prompt = f"""Select the WeeWX field to be used to derive WeeWX field 'rain'. Possible fields
-    are {options}."""
+                _prompt = f"""Select the WeeWX observation to be used to derive 
+WeeWX observation 'rain'. Possible observations are {options}."""
+                # format the prompt string to a 80 character wide multiline string
+                prompt = '\n'.join([i for i in textwrap.wrap(_prompt, 80, break_long_words=False)])
                 print()
                 # obtain the user rain source field selection
-                rain_source_field = weecfg.prompt_with_options(field_prompt,
+                rain_source_field = weecfg.prompt_with_options(prompt,
                                                                default_source,
                                                                options)
                 # Construct the rain config dict, it will comprise the user rain
@@ -5406,12 +5419,12 @@ class EcowittHttpApi:
         if page in [0, 1]:
             try:
                 page_1 = self.request('get_sensors_info', data={'page': 1})
-            except (socket.timeout, urllib.error.URLError):
+            except (socket.timeout, urllib.error.URLError) as e:
                 raise DeviceIOError(f"Failed to obtain 'get_sensors_info' page 1 data: {e}")
         if page in [0, 2]:
             try:
                 page_2 = self.request('get_sensors_info', data={'page': 2})
-            except (socket.timeout, urllib.error.URLError):
+            except (socket.timeout, urllib.error.URLError) as e:
                 raise DeviceIOError(f"Failed to obtain 'get_sensors_info' page 2 data: {e}")
         if page_1 is not None and page_2 is not None:
             return page_1 + page_2
