@@ -200,7 +200,7 @@ class DebugOptionsTestCase(unittest.TestCase):
 class ConfEditorTestCase(unittest.TestCase):
     """Test the EcowittHttpDriverConfEditor class."""
 
-    # minimal [EcowittHttp] config string for conf editior testing
+    # minimal [EcowittHttp] config string for conf editor testing
     minimal_driver_config_str = f"""
     [EcowittHttp]
         driver = user.ecowitt_http
@@ -212,10 +212,35 @@ class ConfEditorTestCase(unittest.TestCase):
         [[Calculations]]
             rain = prefer_hardware
 """
+    # additional [StdWXCalculate] [[Calculations]] and [[Deltas]] entries for
+    # conf editor do_rain() testing
+    add_stdwx_config_str = f"""
+    [StdWXCalculate]
+        [[Calculations]]
+            dewpoint = prefer_hardware
+            windchill = prefer_hardware
+        [[Delta]]
+            [[[hail]]]
+                input = yearHail
+            [[[water]]]
+                input = cumulative_water
+"""
+    # responses for the mocked weecfg.prompt_with_options() side_effect for do_rain() testing
     prompt_responses = [
         'both', 'tipping', 't_yearrain',
-        'both', 'piezo', 'p_yearrain'
+        'both', 'piezo', 'p_yearrain',
+        'tipping', 'tipping', 't_yearrain',
+        'piezo', 'piezo', 'p_yearrain',
+        'none',
+        'both', 'tipping', 't_yearrain',
+        'both', 'piezo', 'p_yearrain',
+        'tipping', 'tipping', 't_yearrain',
+        'piezo', 'piezo', 'p_yearrain',
+        'none',
     ]
+    # lookup table of expected do_rain() test responses, in each case the
+    # expected response is a ConfigObj object; however, for the purposes of the
+    # test method (assertDictEqual()) a dict is adequate
     test_responses = {
         'both_tipping': {'EcowittHttp':
                              {'driver': 'user.ecowitt_http',
@@ -245,14 +270,138 @@ class ConfEditorTestCase(unittest.TestCase):
                                     {'input': 'p_yearrain'},
                                  't_rain':
                                     {'input': 't_rainyear'}}}},
+        'tipping_tipping': {'EcowittHttp':
+                                {'driver': 'user.ecowitt_http',
+                                 'ip_address': '192.168.99.99',
+                                 'field_map_extensions':
+                                     {'rainRate': 'rain.0x0E.val'}},
+                            'StdWXCalculate':
+                                {'Calculations':
+                                     {'rain': 'prefer_hardware'},
+                                 'Delta':
+                                     {'rain':
+                                          {'input': 't_yearrain'}}}},
+        'piezo_piezo': {'EcowittHttp':
+                            {'driver': 'user.ecowitt_http',
+                             'ip_address': '192.168.99.99',
+                             'field_map_extensions':
+                                 {'rainRate': 'piezoRain.0x0E.val'}},
+                        'StdWXCalculate':
+                            {'Calculations':
+                                 {'rain': 'prefer_hardware'},
+                             'Delta':
+                                 {'rain':
+                                      {'input': 'p_yearrain'}}}},
+        'none_none': {'EcowittHttp':
+                          {'driver': 'user.ecowitt_http',
+                           'ip_address': '192.168.99.99'},
+                      'StdWXCalculate':
+                          {'Calculations':
+                               {'rain': 'prefer_hardware'}}},
+        'both_tipping_add': {'EcowittHttp':
+                                 {'driver': 'user.ecowitt_http',
+                                  'ip_address': '192.168.99.99',
+                                  'field_map_extensions':
+                                       {'rainRate': 'rain.0x0E.val'}},
+                             'StdWXCalculate':
+                                 {'Calculations':
+                                      {'rain': 'prefer_hardware',
+                                       'p_rain': 'prefer_hardware',
+                                       'dewpoint': 'prefer_hardware',
+                                       'windchill': 'prefer_hardware'},
+                                  'Delta':
+                                      {'rain':
+                                           {'input': 't_yearrain'},
+                                      'p_rain':
+                                           {'input': 'p_rainyear'},
+                                      'hail':
+                                           {'input': 'yearHail'},
+                                      'water':
+                                           {'input': 'cumulative_water'}}}},
+        'both_piezo_add': {'EcowittHttp':
+                               {'driver': 'user.ecowitt_http',
+                                'ip_address': '192.168.99.99',
+                                'field_map_extensions':
+                                    {'rainRate': 'piezoRain.0x0E.val'}},
+                           'StdWXCalculate':
+                               {'Calculations':
+                                    {'rain': 'prefer_hardware',
+                                     't_rain': 'prefer_hardware',
+                                     'dewpoint': 'prefer_hardware',
+                                     'windchill': 'prefer_hardware'},
+                                'Delta':
+                                    {'rain':
+                                         {'input': 'p_yearrain'},
+                                     't_rain':
+                                         {'input': 't_rainyear'},
+                                     'hail':
+                                         {'input': 'yearHail'},
+                                     'water':
+                                         {'input': 'cumulative_water'}}}},
+        'tipping_tipping_add': {'EcowittHttp':
+                                    {'driver': 'user.ecowitt_http',
+                                     'ip_address': '192.168.99.99',
+                                     'field_map_extensions':
+                                         {'rainRate': 'rain.0x0E.val'}},
+                                'StdWXCalculate':
+                                    {'Calculations':
+                                         {'rain': 'prefer_hardware',
+                                          'dewpoint': 'prefer_hardware',
+                                          'windchill': 'prefer_hardware'},
+                                     'Delta':
+                                         {'rain':
+                                              {'input': 't_yearrain'},
+                                          'hail':
+                                              {'input': 'yearHail'},
+                                          'water':
+                                              {'input': 'cumulative_water'}}}},
+        'piezo_piezo_add': {'EcowittHttp':
+                                {'driver': 'user.ecowitt_http',
+                                 'ip_address': '192.168.99.99',
+                                 'field_map_extensions':
+                                     {'rainRate': 'piezoRain.0x0E.val'}},
+                            'StdWXCalculate':
+                                {'Calculations':
+                                     {'rain': 'prefer_hardware',
+                                      'dewpoint': 'prefer_hardware',
+                                      'windchill': 'prefer_hardware'},
+                                 'Delta':
+                                     {'rain':
+                                          {'input': 'p_yearrain'},
+                                      'hail':
+                                          {'input': 'yearHail'},
+                                      'water':
+                                          {'input': 'cumulative_water'}}}},
+        'none_none_add': {'EcowittHttp':
+                              {'driver': 'user.ecowitt_http',
+                               'ip_address': '192.168.99.99'},
+                          'StdWXCalculate':
+                              {'Calculations':
+                                   {'rain': 'prefer_hardware',
+                                    'dewpoint': 'prefer_hardware',
+                                    'windchill': 'prefer_hardware'},
+                               'Delta':
+                                   {'hail':
+                                        {'input': 'yearHail'},
+                                    'water':
+                                        {'input': 'cumulative_water'}}}},
     }
 
     # patch.object to allow mocking of EcowittDevice.paired_rain_gauges property
-    @patch.object(user.ecowitt_http.EcowittDevice, 'paired_rain_gauges', new_callable=unittest.mock.PropertyMock)
+    @patch.object(user.ecowitt_http.EcowittDevice,
+                  'paired_rain_gauges',
+                  new_callable=unittest.mock.PropertyMock)
     # patch.object to allow mocking of weecfg.prompt_with_options() function
     @patch.object(weecfg, 'prompt_with_options')
     def test_do_rain(self, mock_prompt_with_options, mock_paired_rain_gauges_property):
-        """Test conf editor rain config."""
+        """Test conf editor rain config.
+
+        Tests the EcowittHttpDriverConfEditor.do_rain() methods which processes
+        rain gauge and per-period rain config during device configuration.
+
+        The method under test generates console output, use sys.stdout
+        redirection to suppress this output.
+        """
 
         print()
         print('    testing driver configuration editor rain settings...')
@@ -288,6 +437,108 @@ class ConfEditorTestCase(unittest.TestCase):
         # restore stdout
         sys.stdout = original_stdout
         self.assertDictEqual(test_input, ConfEditorTestCase.test_responses['both_piezo'])
+
+        # test tipping gauge, assigning tipping to WeeWX rain/rainRate
+        # first make a copy of our minimal test config, no need for changes
+        print("        testing tipping gauge, 'tipping' assigned to 'rain'/'rainRate'...")
+        test_input = configobj.ConfigObj(test_config)
+        # redirect stdout to a StringIO object
+        sys.stdout = io.StringIO()
+        user.ecowitt_http.EcowittHttpDriverConfEditor.do_rain(test_input)
+        # restore stdout
+        sys.stdout = original_stdout
+        self.assertDictEqual(test_input, ConfEditorTestCase.test_responses['tipping_tipping'])
+
+        # test piezo gauge, assigning piezo to WeeWX rain/rainRate
+        # first make a copy of our minimal test config, no need for changes
+        print("        testing piezo gauge, 'piezo' assigned to 'rain'/'rainRate'...")
+        test_input = configobj.ConfigObj(test_config)
+        # redirect stdout to a StringIO object
+        sys.stdout = io.StringIO()
+        user.ecowitt_http.EcowittHttpDriverConfEditor.do_rain(test_input)
+        # restore stdout
+        sys.stdout = original_stdout
+        self.assertDictEqual(test_input, ConfEditorTestCase.test_responses['piezo_piezo'])
+
+        # test no gauges
+        # first make a copy of our minimal test config, no need for changes
+        print("        testing no gauge...")
+        test_input = configobj.ConfigObj(test_config)
+        # redirect stdout to a StringIO object
+        sys.stdout = io.StringIO()
+        user.ecowitt_http.EcowittHttpDriverConfEditor.do_rain(test_input)
+        # restore stdout
+        sys.stdout = original_stdout
+        self.assertDictEqual(test_input, ConfEditorTestCase.test_responses['none_none'])
+
+        # test both gauges, assigning tipping to WeeWX rain/rainRate with
+        # additional [StdWXCalculate] entries
+        # first make a copy of our minimal test config, no need for changes
+        print("        testing both gauges, 'tipping' assigned to 'rain'/'rainRate' "
+              "with additional [StdWXCalculate] entries...")
+        test_input = configobj.ConfigObj(test_config)
+        test_input.merge(configobj.ConfigObj(io.StringIO(ConfEditorTestCase.add_stdwx_config_str)))
+        # redirect stdout to a StringIO object
+        sys.stdout = io.StringIO()
+        user.ecowitt_http.EcowittHttpDriverConfEditor.do_rain(test_input)
+        # restore stdout
+        sys.stdout = original_stdout
+        self.assertDictEqual(test_input, ConfEditorTestCase.test_responses['both_tipping_add'])
+
+        # test both gauges, assigning piezo to WeeWX rain/rainRate with
+        # additional [StdWXCalculate] entries
+        # first make a copy of our minimal test config, no need for changes
+        print("        testing both gauges, 'piezo' assigned to 'rain'/'rainRate' "
+              "with additional [StdWXCalculate] entries...")
+        test_input = configobj.ConfigObj(test_config)
+        test_input.merge(configobj.ConfigObj(io.StringIO(ConfEditorTestCase.add_stdwx_config_str)))
+        # redirect stdout to a StringIO object
+        sys.stdout = io.StringIO()
+        user.ecowitt_http.EcowittHttpDriverConfEditor.do_rain(test_input)
+        # restore stdout
+        sys.stdout = original_stdout
+        self.assertDictEqual(test_input, ConfEditorTestCase.test_responses['both_piezo_add'])
+
+        # test tipping gauge, assigning tipping to WeeWX rain/rainRate with
+        # additional [StdWXCalculate] entries
+        # first make a copy of our minimal test config, no need for changes
+        print("        testing tipping gauge, 'tipping' assigned to 'rain'/'rainRate' "
+              "with additional [StdWXCalculate] entries...")
+        test_input = configobj.ConfigObj(test_config)
+        test_input.merge(configobj.ConfigObj(io.StringIO(ConfEditorTestCase.add_stdwx_config_str)))
+        # redirect stdout to a StringIO object
+        sys.stdout = io.StringIO()
+        user.ecowitt_http.EcowittHttpDriverConfEditor.do_rain(test_input)
+        # restore stdout
+        sys.stdout = original_stdout
+        self.assertDictEqual(test_input, ConfEditorTestCase.test_responses['tipping_tipping_add'])
+
+        # test piezo gauge, assigning piezo to WeeWX rain/rainRate with
+        # additional [StdWXCalculate] entries
+        # first make a copy of our minimal test config, no need for changes
+        print("        testing piezo gauge, 'piezo' assigned to 'rain'/'rainRate' "
+              "with additional [StdWXCalculate] entries...")
+        test_input = configobj.ConfigObj(test_config)
+        test_input.merge(configobj.ConfigObj(io.StringIO(ConfEditorTestCase.add_stdwx_config_str)))
+        # redirect stdout to a StringIO object
+        sys.stdout = io.StringIO()
+        user.ecowitt_http.EcowittHttpDriverConfEditor.do_rain(test_input)
+        # restore stdout
+        sys.stdout = original_stdout
+        self.assertDictEqual(test_input, ConfEditorTestCase.test_responses['piezo_piezo_add'])
+
+        # test no gauges with additional [StdWXCalculate] entries
+        # first make a copy of our minimal test config, no need for changes
+        print("        testing no gauge with additional [StdWXCalculate] entries...")
+        test_input = configobj.ConfigObj(test_config)
+        test_input.merge(configobj.ConfigObj(io.StringIO(ConfEditorTestCase.add_stdwx_config_str)))
+        # redirect stdout to a StringIO object
+        sys.stdout = io.StringIO()
+        user.ecowitt_http.EcowittHttpDriverConfEditor.do_rain(test_input)
+        # restore stdout
+        sys.stdout = original_stdout
+        self.assertDictEqual(test_input, ConfEditorTestCase.test_responses['none_none_add'])
+
         print('    driver configuration editor rain settings testing complete...')
 
     def test_accumulator_config(self):
@@ -2112,7 +2363,7 @@ def suite(test_cases):
         tests = loader.loadTestsFromTestCase(test_class)
         # add the tests to the test suite
         suite.addTests(tests)
-    # finally return the populated test suite
+    # finally, return the populated test suite
     return suite
 
 

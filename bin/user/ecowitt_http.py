@@ -2569,7 +2569,8 @@ piezo gauge are paired."""
         paired_gauges = weecfg.prompt_with_options(prompt,
                                                    paired_str,
                                                    ['none', 'tipping', 'piezo', 'both']).lower()
-        if len(paired) > 0:
+#        if len(paired) > 0:
+        if paired_gauges in ('tipping', 'piezo', 'both'):
             # we have a least one paired gauge
 
             # Get a HttpMapper object so we can access the field map being used. We
@@ -2781,8 +2782,9 @@ WeeWX observation 'rain'. Possible observations are {options}."""
                     # merge the rain rate config into our rain config
                     _rain_config_dict.merge(configobj.ConfigObj(io.StringIO(_rate_config_str)))
                 # if we have had a change from 'tipping' to 'piezo' or vice-versa
-                # we need to add back the old 't_rain' or 'p_rain' calculation
-                if add_back is not None:
+                # we need to add back the old 't_rain' or 'p_rain' calculation,
+                # but only if we have 'both' gauges
+                if add_back is not None and paired_gauges == 'both':
                     # we have had a change of source, construct a suitable config
                     # string
                     _change_config_str = f"""
@@ -2853,7 +2855,24 @@ WeeWX observation 'rain'. Possible observations are {options}."""
             if len(config_dict['StdWXCalculate']['Delta']) == 0:
                 _ = config_dict['StdWXCalculate'].pop('Delta')
         else:
-            pass
+            # we have no paired gauges
+            # our config is straightforward, we should leave [Calculations]
+            # 'rain' as is, remove any 'rainRate' field map extensions, remove
+            # any 'rain', 't_rain' or ''p_rain' deltas
+            if 'field_map_extensions' in config_dict['EcowittHttp'].keys():
+                _ = config_dict['EcowittHttp']['field_map_extensions'].pop('rainRate', None)
+                # finally, if we have ended up with no [EcowittHttp] [[field_map_extensions]]
+                # entries we can safely delete the entire [[field_map_extensions]] stanza
+                if len(config_dict['EcowittHttp']['field_map_extensions']) == 0:
+                    _ = config_dict['EcowittHttp'].pop('field_map_extensions')
+            if 'Delta' in config_dict['StdWXCalculate'].keys():
+                _ = config_dict['StdWXCalculate']['Delta'].pop('rain', None)
+                _ = config_dict['StdWXCalculate']['Delta'].pop('t_rain', None)
+                _ = config_dict['StdWXCalculate']['Delta'].pop('p_rain', None)
+                # finally, if we have ended up with no [StdWXCalculate] [[Delta]]
+                # entries we can safely delete the entire [[Delta]] stanza
+                if len(config_dict['StdWXCalculate']['Delta']) == 0:
+                    _ = config_dict['StdWXCalculate'].pop('Delta')
 
     @staticmethod
     def do_lightning(config_dict):
