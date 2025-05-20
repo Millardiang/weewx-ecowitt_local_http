@@ -2451,21 +2451,6 @@ class EcowittHttpDriverConfEditor(weewx.drivers.AbstractConfEditor):
         debug_sensors = False
     """
 
-    # def get_conf(self, orig_stanza=None):
-    #     """Given a configuration stanza, return a possibly modified copy
-    #     that will work with the current version of the device driver.
-    #
-    #     The default behavior is to return the original stanza, unmodified.
-    #
-    #     Derived classes should override this if they need to modify previous
-    #     configuration options or warn about deprecated or harmful options.
-    #
-    #     The return value should be a long string. See default_stanza above
-    #     for an example string stanza.
-    #     """
-    #
-    #     return self.default_stanza if orig_stanza is None else orig_stanza
-    #
     def prompt_for_settings(self):
         """Prompt for settings required for proper operation of this driver.
 
@@ -2555,16 +2540,21 @@ startup once only or '1' to attempt startup indefinitely."""
         # first get the driver config stanza (if it exists) from the WeeWX
         # config dict, we will refer to this a few times
         driver_config_dict = config_dict.get('EcowittHttp', {})
+        # Get a HttpMapper object so we can access the field map being used. We
+        # need the field map so we can 'talk' WeeWX field names with the
+        # user - the user does not necessarily know the 'dotted' Ecowitt field
+        # names.
+        mapper = HttpMapper(driver_config_dict)
         # Determine the rain gauge type(s) paired with the device. To do this
         # we obtain an EcowittDevice and inspect the paired_rain_gauges
         # property.
         # first get the device IP address
-        ip_address = config_dict.get('EcowittHttp', {}).get('ip_address')
+        ip_address = driver_config_dict.get('ip_address')
         # now get an EcowittDevice object
         try:
             device = EcowittDevice(ip_address=ip_address)
         except weewx.ViolatedPrecondition:
-            paired_str = 'none'
+            raise
         else:
             # and finally get the paired_rain_gauges property
             paired = device.paired_rain_gauges
@@ -2577,18 +2567,17 @@ piezoelectric (piezo) rain gauges. Select the gauge type(s) paired with this dev
 to 'none' if no gauges are paired, 'tipping' if only a tipping gauge is paired, 
 'piezo' if only a piezo gauge is paired or 'both' if both a tipping gauge and a 
 piezo gauge are paired."""
+        # format the prompt string to a 80 character wide multiline string
         prompt = '\n'.join([i for i in textwrap.wrap(_prompt, 80, break_long_words=False)])
         print()
         # obtain the user rain gauge type(s) paired with the device
         paired_gauges = weecfg.prompt_with_options(prompt,
                                                    paired_str,
                                                    ['none', 'tipping', 'piezo', 'both']).lower()
-        if len(paired) > 0:
-            # Get a HttpMapper object so we can access the field map being used. We
-            # need the field map so we can 'talk' WeeWX field names with the
-            # user - the user does not necessarily know the 'dotted' Ecowitt field
-            # names.
-            mapper = HttpMapper(driver_config_dict)
+#        if len(paired) > 0:
+        if paired_gauges in ('tipping', 'piezo', 'both'):
+            # we have a least one paired gauge
+
             # obtain the current [StdWXCalculate] [[Delta]] config if it exists
             _deltas_config_dict = config_dict['StdWXCalculate'].get('Delta', {})
             # get the WeeWX field used as the 'cumulative' key used to calculate
@@ -2597,20 +2586,21 @@ piezo gauge are paired."""
             # get the Ecowitt field used to derive the 'cumulative' key used to
             # calculate 'rain', if there isn't such a WeeWX field then use None
             curr_rain_e_src = mapper.field_map.get(curr_rain_w_src) if curr_rain_w_src is not None else None
-            # Determine the rain gauge type in use, it will be either 'tipping'
-            # or 'piezo'. If we can't determine the type then use the string
-            # 'none'.
+            # Determine the rain gauge type used to calculate 'rain', it will
+            # be either 'tipping' or 'piezo'. If we can't determine the type
+            # then use the string 'none'.
             curr_gauge_type = 'none'
             if curr_rain_w_src is not None:
                 if curr_rain_e_src in EcowittHttpDriverConfEditor.t_src_fields:
                     curr_gauge_type = 'tipping'
                 elif curr_rain_e_src in EcowittHttpDriverConfEditor.p_src_fields:
                     curr_gauge_type = 'piezo'
-            # Now we can determine the preferred WeeWX field name for tipping
-            # and piezo gauges, it is the available cumulative rain field with the
-            # longest reset interval. If no field is available (unlikely) then use
-            # None.
-            # set our preferred tipping field name to None until we find a field
+            # Now determine the preferred WeeWX field name for tipping and
+            # piezo gauges. The preferred field is the available cumulative
+            # rain field with the longest reset interval. If no field is
+            # available (unlikely) then use None.
+            # tipping, set our preferred tipping field name to None until we
+            # find a field
             pref_t_field = None
             # iterate over the possible Ecowitt tipping source fields
             for _field in EcowittHttpDriverConfEditor.t_src_fields:
@@ -2622,7 +2612,8 @@ piezo gauge are paired."""
                     pref_t_field = mapper.field_map.inverse[_field]
                     # no need to search further, break out of the loop
                     break
-            # set our preferred piezo field name to None until we find a field
+            # piezo, set our preferred tipping field name to None until we find
+            # a field
             pref_p_field = None
             # iterate over the possible Ecowitt piezo source fields
             for _field in EcowittHttpDriverConfEditor.p_src_fields:
@@ -2641,40 +2632,46 @@ piezo gauge are paired."""
             # to be added back to StdWXCalculate if the user changes from 'tipping'
             # to 'none' or 'piezo' to 'none'
             add_back = None
-            # construct the prompt text
+            # construct the prompt text, the prompt text will vary depending on
+            # what gauges are paired
             if len(paired_gauges) > 1:
                 select_1 = "'tipping' to populate the WeeWX rain fields from a paired tipping gauge"
                 select_2 = "'piezo' to populate the WeeWX rain fields from a paired piezo gauge"
                 select_3 = "'none' to not populate the WeeWX rain fields"
                 punc = ", "
                 conj = " or "
+                possible = ['tipping', 'piezo', 'none']
             elif paired_gauges[0] == 'tipping':
                 select_1 = "'tipping' to populate the WeeWX rain fields from a paired tipping gauge"
                 select_2 = ""
                 select_3 = "'none' to not populate the WeeWX rain fields"
                 punc = ""
                 conj = " or "
+                possible = ['tipping', 'none']
             elif paired_gauges[0] == 'piezo':
                 select_1 = ""
                 select_2 = "'piezo' to populate the WeeWX rain fields from a paired piezo gauge"
                 select_3 = "'none' to not populate the WeeWX rain fields"
                 punc = ""
                 conj = " or "
+                possible = ['piezo', 'none']
             selection_str = f"Set to {select_1}{punc}{select_2}{conj}{select_3}."
+            # now construct the overall prompt string
             _prompt = f"""By default, per-period rainfall values and rain rates will appear in
 fields 't_rain'/'t_rainrate' and 'p_rain'/'p_rainrate for paired tipping and 
-piezo rain gauges respectively. WeeWX can populate the default WeeWX rain fields 
+piezo rain gauges respectively. WeeWX can populate the default WeeWX rain observations 
 ('rain' and 'rainRate') from either a paired tipping or piezo rain gauge. {selection_str}"""
+            # format the prompt string to a 80 character wide multiline string
             prompt = '\n'.join([i for i in textwrap.wrap(_prompt, 80, break_long_words=False)])
             print()
             # obtain the user rain gauge type being used
             user_gauge_type = weecfg.prompt_with_options(prompt,
                                                          curr_gauge_type,
-                                                         ['tipping', 'piezo', 'none']).lower()
+                                                         possible).lower()
             # given the rain gauge type selected, obtain the source field to be
             # used to calculate WeeWX field 'rain'
             if user_gauge_type in ('tipping', 'piezo'):
-                if user_gauge_type.lower() == 'tipping':
+                if user_gauge_type == 'tipping':
                     # a tipping rainfall gauge was chosen
 
                     # Get the default WeeWX source field, it is the WeeWX field
@@ -2708,7 +2705,7 @@ piezo rain gauges respectively. WeeWX can populate the default WeeWX rain fields
                     # set the Ecowitt field to be used to map to WeeWX field
                     # rainRate
                     rate_field = 'rain.0x0E.val'
-                elif user_gauge_type.lower() == 'piezo':
+                else:
                     # a piezo rainfall gauge was chosen
 
                     # Get the default WeeWX source field, it is the WeeWX field
@@ -2749,11 +2746,13 @@ piezo rain gauges respectively. WeeWX can populate the default WeeWX rain fields
                     options = ' or '.join([_first, _fields[-1]])
                 # construct the prompt text to use, it includes a list of the
                 # available possible fields
-                field_prompt = f"""Select the WeeWX field to be used to derive WeeWX field 'rain'. Possible fields
-    are {options}."""
+                _prompt = f"""Select the WeeWX observation to be used to derive 
+WeeWX observation 'rain'. Possible observations are {options}."""
+                # format the prompt string to a 80 character wide multiline string
+                prompt = '\n'.join([i for i in textwrap.wrap(_prompt, 80, break_long_words=False)])
                 print()
                 # obtain the user rain source field selection
-                rain_source_field = weecfg.prompt_with_options(field_prompt,
+                rain_source_field = weecfg.prompt_with_options(prompt,
                                                                default_source,
                                                                options)
                 # Construct the rain config dict, it will comprise the user rain
@@ -2783,8 +2782,9 @@ piezo rain gauges respectively. WeeWX can populate the default WeeWX rain fields
                     # merge the rain rate config into our rain config
                     _rain_config_dict.merge(configobj.ConfigObj(io.StringIO(_rate_config_str)))
                 # if we have had a change from 'tipping' to 'piezo' or vice-versa
-                # we need to add back the old 't_rain' or 'p_rain' calculation
-                if add_back is not None:
+                # we need to add back the old 't_rain' or 'p_rain' calculation,
+                # but only if we have 'both' gauges
+                if add_back is not None and paired_gauges == 'both':
                     # we have had a change of source, construct a suitable config
                     # string
                     _change_config_str = f"""
@@ -2816,13 +2816,13 @@ piezo rain gauges respectively. WeeWX can populate the default WeeWX rain fields
                 # (now) unused [StdWXCalculate] config stanzas/options
 
                 # do we have a [[Delta]] [[[rain]]], if so remove it
-                if 'rain' in config_dict['StdWXCalculate'].get('Delta', {}):
+                if 'rain' in config_dict['StdWXCalculate'].get('Delta', {}) and config_dict['StdWXCalculate']['Delta']['rain'] in mapper.field_map.values():
                     # we have a [[[rain]]] stanza, we can safely delete it
                     _ = config_dict['StdWXCalculate']['Delta'].pop('rain')
-                # do we have a [[Calculation]] 'rain' entry, if so remove it
-                if 'rain' in config_dict['StdWXCalculate'].get('Calculations', {}):
-                    # we have a 'rain' config entry, we can safely delete it
-                    _ = config_dict['StdWXCalculate']['Calculations'].pop('rain')
+#                # do we have a [[Calculation]] 'rain' entry, if so remove it
+#                if 'rain' in config_dict['StdWXCalculate'].get('Calculations', {}):
+#                    # we have a 'rain' config entry, we can safely delete it
+#                    _ = config_dict['StdWXCalculate']['Calculations'].pop('rain')
                 # if we went from a gauge to no gauge we need to restore the
                 # default WeeWX per-period rain and rain rate fields
                 if curr_gauge_type in ('tipping', 'piezo'):
@@ -2855,7 +2855,25 @@ piezo rain gauges respectively. WeeWX can populate the default WeeWX rain fields
             if len(config_dict['StdWXCalculate']['Delta']) == 0:
                 _ = config_dict['StdWXCalculate'].pop('Delta')
         else:
-            pass
+            # we have no paired gauges
+            # our config is straightforward, we should leave [Calculations]
+            # 'rain' as is, remove any 'rainRate' field map extensions, remove
+            # any 'rain', 't_rain' or ''p_rain' deltas
+            if 'field_map_extensions' in config_dict['EcowittHttp'].keys():
+                _ = config_dict['EcowittHttp']['field_map_extensions'].pop('rainRate', None)
+                # finally, if we have ended up with no [EcowittHttp] [[field_map_extensions]]
+                # entries we can safely delete the entire [[field_map_extensions]] stanza
+                if len(config_dict['EcowittHttp']['field_map_extensions']) == 0:
+                    _ = config_dict['EcowittHttp'].pop('field_map_extensions')
+            if 'Delta' in config_dict['StdWXCalculate'].keys():
+                if 'rain' in config_dict['StdWXCalculate']['Delta'] and config_dict['StdWXCalculate']['Delta']['rain'].get('input') in mapper.field_map.values():
+                    _ = config_dict['StdWXCalculate']['Delta'].pop('rain', None)
+                _ = config_dict['StdWXCalculate']['Delta'].pop('t_rain', None)
+                _ = config_dict['StdWXCalculate']['Delta'].pop('p_rain', None)
+                # finally, if we have ended up with no [StdWXCalculate] [[Delta]]
+                # entries we can safely delete the entire [[Delta]] stanza
+                if len(config_dict['StdWXCalculate']['Delta']) == 0:
+                    _ = config_dict['StdWXCalculate'].pop('Delta')
 
     @staticmethod
     def do_lightning(config_dict):
@@ -5421,12 +5439,12 @@ class EcowittHttpApi:
         if page in [0, 1]:
             try:
                 page_1 = self.request('get_sensors_info', data={'page': 1})
-            except (socket.timeout, urllib.error.URLError):
+            except (socket.timeout, urllib.error.URLError) as e:
                 raise DeviceIOError(f"Failed to obtain 'get_sensors_info' page 1 data: {e}")
         if page in [0, 2]:
             try:
                 page_2 = self.request('get_sensors_info', data={'page': 2})
-            except (socket.timeout, urllib.error.URLError):
+            except (socket.timeout, urllib.error.URLError) as e:
                 raise DeviceIOError(f"Failed to obtain 'get_sensors_info' page 2 data: {e}")
         if page_1 is not None and page_2 is not None:
             return page_1 + page_2
