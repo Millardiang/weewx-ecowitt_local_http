@@ -3914,7 +3914,6 @@ class EcowittDeviceCatchup:
 
     # history data file fields by WeeWX unit group that may require unit
     # conversion
-    # TODO. Suspect these should be output field names from SdMapper, eg: common_list.0x02.val
     unit_groups_by_field = {
         'group_temperature': ('wh25.intemp', 'common_list.0x02.val', 'common_list.0x03.val', 'feelslike',
                               'ch_aisle.1.temp', 'ch_aisle.2.temp', 'ch_aisle.3.temp', 'ch_aisle.4.temp',
