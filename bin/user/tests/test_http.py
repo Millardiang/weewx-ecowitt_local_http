@@ -567,6 +567,18 @@ class ConfEditorTestCase(unittest.TestCase):
 
         print('    driver configuration editor archive record generation settings testing complete...')
 
+    # patch.object to allow mocking of weecfg.prompt_with_options() function
+    @patch.object(weecfg, 'prompt_with_options')
+    def test_prompt_for_settings(self, mock_prompt_with_options):
+        """Test conf editor prompt for settings."""
+
+        print()
+        print('    testing driver configuration editor prompt for settings...')
+
+        # set mocked items
+        mock_prompt_with_options.side_effect = ConfEditorTestCase.prompt_for_settings_input
+
+
     # patch.object to allow mocking of EcowittDevice.paired_rain_gauges property
     @patch.object(user.ecowitt_http.EcowittDevice,
                   'paired_rain_gauges',
