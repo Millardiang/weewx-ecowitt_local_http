@@ -200,6 +200,20 @@ class DebugOptionsTestCase(unittest.TestCase):
 class ConfEditorTestCase(unittest.TestCase):
     """Test the EcowittHttpDriverConfEditor class."""
 
+    # test prompt for settings inputs
+    prompt_for_settings_input = [
+        '192.168.99.99', '10',
+        'www.xxx.yyy.zzz', '10',
+        '192.168.99.99', '10',
+        '192.168.99.99', '10',
+        '192.168.99.99', '10',
+        '192.168.99.99', '10',
+    ]
+    prompt_for_settings_responses = [
+        {'ip_address': '192.168.99.99', 'poll_interval': 10},
+        {'ip_address': 'www.xxx.yyy.zzz', 'poll_interval': 10},
+    ]
+
     # minimal [EcowittHttp] config string for conf editor testing
     minimal_driver_config_str = f"""
     [EcowittHttp]
@@ -224,6 +238,36 @@ class ConfEditorTestCase(unittest.TestCase):
                 input = yearHail
             [[[water]]]
                 input = cumulative_water
+"""
+    # additional [StdWXCalculate] config entries for conf editor do_lightning()
+    # testing
+    add_lightning_config_str = f"""
+    [StdWXCalculate]
+        [[Calculations]]
+            dewpoint = prefer_hardware
+            windchill = prefer_hardware
+        [[Delta]]
+            [[[hail]]]
+                input = yearHail
+            [[[water]]]
+                input = cumulative_water
+"""
+    # additional [StdArchive] config entries for conf editor
+    # do_archive_record_generation() testing
+    add_archive_config_str = f"""
+    [StdArchive]
+        # If the station hardware supports data logging then the archive interval
+        # will be downloaded from the station. Otherwise, specify it (in seconds).
+        archive_interval = 300
+        
+        # If possible, new archive records are downloaded from the station
+        # hardware. If the hardware does not support this, then new archive
+        # records will be generated in software.
+        # Set the following to "software" to force software record generation.
+        record_generation = hardware
+        
+        # Whether to include LOOP data in hi/low statistics.
+        loop_hilo = True
 """
     # responses for the mocked weecfg.prompt_with_options() side_effect for do_rain() testing
     prompt_responses = [
@@ -386,6 +430,142 @@ class ConfEditorTestCase(unittest.TestCase):
                                     'water':
                                         {'input': 'cumulative_water'}}}},
     }
+    # lightning test expected response
+    lightning_responses = {
+        'clean': {'EcowittHttp':
+                      {'driver': 'user.ecowitt_http',
+                      'ip_address': '192.168.99.99'},
+                  'StdWXCalculate':
+                      {'Calculations':
+                           {'lightning_strike_count': 'prefer_hardware'},
+                       'Delta':
+                           {'lightning_strike_count':
+                                {'input': 'lightningcount'}}}},
+        'additional_config': {'EcowittHttp':
+                                  {'driver': 'user.ecowitt_http',
+                                   'ip_address': '192.168.99.99'},
+                              'StdWXCalculate':
+                                  {'Calculations':
+                                       {'lightning_strike_count': 'prefer_hardware',
+                                        'dewpoint': 'prefer_hardware',
+                                        'windchill': 'prefer_hardware'},
+                                   'Delta':
+                                       {'lightning_strike_count':
+                                            {'input': 'lightningcount'},
+                                        'hail':
+                                            {'input': 'yearHail'},
+                                        'water':
+                                            {'input': 'cumulative_water'}}}}
+    }
+    # archive record generation test expected response
+    archive_responses = {
+        'clean': {'EcowittHttp':
+                      {'driver': 'user.ecowitt_http',
+                       'ip_address': '192.168.99.99'},
+                  'StdArchive':
+                      {'archive_interval': '300',
+                       'record_generation': 'software',
+                       'loop_hilo': 'True'}},
+        'additional_config': {'EcowittHttp':
+                                  {'driver': 'user.ecowitt_http',
+                                   'ip_address': '192.168.99.99'},
+                              'StdWXCalculate':
+                                  {'Calculations':
+                                       {'lightning_strike_count': 'prefer_hardware',
+                                        'dewpoint': 'prefer_hardware',
+                                        'windchill': 'prefer_hardware'},
+                                   'Delta':
+                                       {'lightning_strike_count':
+                                            {'input': 'lightningcount'},
+                                        'hail':
+                                            {'input': 'yearHail'},
+                                        'water':
+                                            {'input': 'cumulative_water'}}}}
+    }
+
+    # patch.object to allow mocking of weecfg.prompt_with_options() function
+    @patch.object(weecfg, 'prompt_with_options')
+    def test_prompt_for_settings(self, mock_prompt_with_options):
+        """Test conf editor prompt for settings."""
+        return
+        print()
+        print('    testing driver configuration editor prompt for settings...')
+
+        # set mocked items
+        mock_prompt_with_options.side_effect = ConfEditorTestCase.prompt_for_settings_input
+
+    def test_do_lightning(self):
+        """Test conf editor lightning config."""
+
+        print()
+        print('    testing driver configuration editor lightning settings...')
+
+        # store original stdout
+        original_stdout = sys.stdout
+
+        # test with no pre-existing [StdWXCalculate] [[Deltas]]
+        print("        testing clean installation with minimal config...")
+        # obtain the minimal test config, it is built from the minimal driver
+        test_config = configobj.ConfigObj(io.StringIO(ConfEditorTestCase.minimal_driver_config_str))
+        test_input = configobj.ConfigObj(test_config)
+        # redirect stdout to a StringIO object
+        sys.stdout = io.StringIO()
+        user.ecowitt_http.EcowittHttpDriverConfEditor.do_lightning(test_input)
+        # restore stdout
+        sys.stdout = original_stdout
+        self.assertDictEqual(test_input, ConfEditorTestCase.lightning_responses['clean'])
+
+        # test with pre-existing [StdWXCalculate] [[Deltas]]
+        print("        testing with pre-existsing [StdWXCalculate] [[Deltas]] config...")
+        # obtain the minimal test config, it is built from the minimal driver
+        test_config = configobj.ConfigObj(io.StringIO(ConfEditorTestCase.minimal_driver_config_str))
+        test_input = configobj.ConfigObj(test_config)
+        test_input.merge(configobj.ConfigObj(io.StringIO(ConfEditorTestCase.add_lightning_config_str)))
+        # redirect stdout to a StringIO object
+        sys.stdout = io.StringIO()
+        user.ecowitt_http.EcowittHttpDriverConfEditor.do_lightning(test_input)
+        # restore stdout
+        sys.stdout = original_stdout
+        self.assertDictEqual(test_input, ConfEditorTestCase.lightning_responses['additional_config'])
+
+        print('    driver configuration editor lightning settings testing complete...')
+
+    def test_do_archive_record_generation(self):
+        """Test conf editor archive record generation config."""
+
+        print()
+        print('    testing driver configuration editor archive record generation settings...')
+
+        # store original stdout
+        original_stdout = sys.stdout
+
+        # test with no pre-existing [StdWXCalculate] [[Deltas]]
+        print("        testing clean installation with minimal config...")
+        # obtain the minimal test config, it is built from the minimal driver
+        test_config = configobj.ConfigObj(io.StringIO(ConfEditorTestCase.minimal_driver_config_str))
+        test_input = configobj.ConfigObj(test_config)
+        test_input.merge(configobj.ConfigObj(io.StringIO(ConfEditorTestCase.add_archive_config_str)))
+        # redirect stdout to a StringIO object
+        sys.stdout = io.StringIO()
+        user.ecowitt_http.EcowittHttpDriverConfEditor.do_archive_record_generation(test_input)
+        # restore stdout
+        sys.stdout = original_stdout
+        self.assertDictEqual(test_input, ConfEditorTestCase.lightning_responses['clean'])
+
+        # test with pre-existing [StdWXCalculate] [[Deltas]]
+        print("        testing with pre-existing [StdWXCalculate] [[Deltas]] config...")
+        # obtain the minimal test config, it is built from the minimal driver
+        test_config = configobj.ConfigObj(io.StringIO(ConfEditorTestCase.minimal_driver_config_str))
+        test_input = configobj.ConfigObj(test_config)
+        test_input.merge(configobj.ConfigObj(io.StringIO(ConfEditorTestCase.add_lightning_config_str)))
+        # redirect stdout to a StringIO object
+        sys.stdout = io.StringIO()
+        user.ecowitt_http.EcowittHttpDriverConfEditor.do_lightning(test_input)
+        # restore stdout
+        sys.stdout = original_stdout
+        self.assertDictEqual(test_input, ConfEditorTestCase.lightning_responses['additional_config'])
+
+        print('    driver configuration editor archive record generation settings testing complete...')
 
     # patch.object to allow mocking of EcowittDevice.paired_rain_gauges property
     @patch.object(user.ecowitt_http.EcowittDevice,
