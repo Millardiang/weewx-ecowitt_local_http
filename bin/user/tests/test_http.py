@@ -239,6 +239,16 @@ class ConfEditorTestCase(unittest.TestCase):
             [[[water]]]
                 input = cumulative_water
 """
+    # additional [StdWXCalculate] [[Calculations]] and [[Deltas]] entries for
+    # conf editor do_rain() testing
+    other_stdwx_delta_config_str = f"""
+        [StdWXCalculate]
+            [[Calculations]]
+                rain = prefer_hardware
+            [[Delta]]
+                [[[rain]]]
+                    input = rain_field
+    """
     # additional [StdWXCalculate] config entries for conf editor do_lightning()
     # testing
     add_lightning_config_str = f"""
@@ -281,6 +291,7 @@ class ConfEditorTestCase(unittest.TestCase):
         'tipping', 'tipping', 't_yearrain',
         'piezo', 'piezo', 'p_yearrain',
         'none',
+        'none'
     ]
     # lookup table of expected do_rain() test responses, in each case the
     # expected response is a ConfigObj object; however, for the purposes of the
@@ -342,6 +353,15 @@ class ConfEditorTestCase(unittest.TestCase):
                       'StdWXCalculate':
                           {'Calculations':
                                {'rain': 'prefer_hardware'}}},
+        'none_none_other': {'EcowittHttp':
+                                {'driver': 'user.ecowitt_http',
+                                 'ip_address': '192.168.99.99'},
+                            'StdWXCalculate':
+                                {'Calculations':
+                                     {'rain': 'prefer_hardware'},
+                                 'Delta':
+                                     {'rain':
+                                          {'input': 'rain_field'}}}},
         'both_tipping_add': {'EcowittHttp':
                                  {'driver': 'user.ecowitt_http',
                                   'ip_address': '192.168.99.99',
@@ -715,6 +735,21 @@ class ConfEditorTestCase(unittest.TestCase):
         # restore stdout
         sys.stdout = original_stdout
         self.assertDictEqual(test_input, ConfEditorTestCase.test_responses['none_none_add'])
+
+        # test no gauges with non-Ecowitt 'rain' source
+        # first make a copy of our minimal test config, no need for changes
+        print("        testing no gauge...")
+        # obtain the minimal test config, it is built from the minimal driver
+        # config and other StdWXCalculate delta config
+        test_config = configobj.ConfigObj(io.StringIO(ConfEditorTestCase.minimal_driver_config_str))
+        test_config.merge(configobj.ConfigObj(io.StringIO(ConfEditorTestCase.other_stdwx_delta_config_str)))
+        test_input = configobj.ConfigObj(test_config)
+        # redirect stdout to a StringIO object
+        sys.stdout = io.StringIO()
+        user.ecowitt_http.EcowittHttpDriverConfEditor.do_rain(test_input)
+        # restore stdout
+        sys.stdout = original_stdout
+        self.assertDictEqual(test_input, ConfEditorTestCase.test_responses['none_none_other'])
 
         print('    driver configuration editor rain settings testing complete...')
 
