@@ -2831,7 +2831,8 @@ WeeWX observation 'rain'. Possible observations are {options}."""
                 # (now) unused [StdWXCalculate] config stanzas/options
 
                 # do we have a [[Delta]] [[[rain]]], if so remove it
-                if 'rain' in config_dict['StdWXCalculate'].get('Delta', {}) and config_dict['StdWXCalculate']['Delta']['rain'] in mapper.field_map.values():
+                if 'rain' in config_dict['StdWXCalculate'].get('Delta', {}) and \
+                        config_dict['StdWXCalculate']['Delta']['rain'] in mapper.field_map.values():
                     # we have a [[[rain]]] stanza, we can safely delete it
                     _ = config_dict['StdWXCalculate']['Delta'].pop('rain')
 #                # do we have a [[Calculation]] 'rain' entry, if so remove it
@@ -2873,7 +2874,8 @@ WeeWX observation 'rain'. Possible observations are {options}."""
             # we have no paired gauges
             # our config is straightforward, we should leave [Calculations]
             # 'rain' as is, remove any 'rainRate' field map extensions, remove
-            # any 'rain', 't_rain' or ''p_rain' deltas
+            # any 't_rain' or ''p_rain' deltas, remove any 'rain' deltas if
+            # they use an Ecowitt HTTP driver sourced field
             if 'field_map_extensions' in config_dict['EcowittHttp'].keys():
                 _ = config_dict['EcowittHttp']['field_map_extensions'].pop('rainRate', None)
                 # finally, if we have ended up with no [EcowittHttp] [[field_map_extensions]]
@@ -2881,8 +2883,13 @@ WeeWX observation 'rain'. Possible observations are {options}."""
                 if len(config_dict['EcowittHttp']['field_map_extensions']) == 0:
                     _ = config_dict['EcowittHttp'].pop('field_map_extensions')
             if 'Delta' in config_dict['StdWXCalculate'].keys():
-                if 'rain' in config_dict['StdWXCalculate']['Delta'] and config_dict['StdWXCalculate']['Delta']['rain'].get('input') in mapper.field_map.values():
+                # do we have a 'rain' delta and if so is it sourced from an
+                # Ecowitt HTTP driver field
+                if 'rain' in config_dict['StdWXCalculate']['Delta'] and \
+                        config_dict['StdWXCalculate']['Delta']['rain'].get('input') in mapper.field_map.values():
+                    # we an Ecowitt HTTP driver rain delta, remove it
                     _ = config_dict['StdWXCalculate']['Delta'].pop('rain', None)
+                # remove any other Ecowitt sourced deltas
                 _ = config_dict['StdWXCalculate']['Delta'].pop('t_rain', None)
                 _ = config_dict['StdWXCalculate']['Delta'].pop('p_rain', None)
                 # finally, if we have ended up with no [StdWXCalculate] [[Delta]]
