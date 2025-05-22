@@ -1487,7 +1487,7 @@ class HttpParserTestCase(unittest.TestCase):
     def setUp(self):
 
         # setup additional unit conversions etc
-        user.ecowitt_http.define_units(dict())
+        user.ecowitt_http.define_units()
         # get a Parser object
         self.parser = user.ecowitt_http.EcowittHttpParser()
         self.maxDiff = None

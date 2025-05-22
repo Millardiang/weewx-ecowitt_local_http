@@ -1557,10 +1557,6 @@ class EcowittCommon:
         # DEFAULT_POLL_INTERVAL
         self.poll_interval = int(ec_config.get('poll_interval',
                                                DEFAULT_POLL_INTERVAL))
-        # do we ignore battery state data from legacy WH40 sensors that do not
-        # provide valid battery state data
-        ignore_wh40_batt = weeutil.weeutil.tobool(ec_config.get('ignore_legacy_wh40_battery',
-                                                                True))
         # do we show all battery state data including nonsense data or do we
         # filter those sensors with signal state == 0
         show_battery = weeutil.weeutil.tobool(ec_config.get('show_all_batt',
@@ -1576,7 +1572,7 @@ class EcowittCommon:
                                                      DEFAULT_FW_CHECK_INTERVAL))
 
         # define custom unit settings used by the driver
-        define_units(dict())
+        define_units()
 
         # log our config/settings that are not being pushed further down before
         # we obtain an EcowittHttpCollector object. Obtaining an
@@ -1625,7 +1621,6 @@ class EcowittCommon:
                                               retry_wait=retry_wait,
                                               url_timeout=self.url_timeout,
                                               unit_system=unit_system,
-                                              ignore_wh40_batt=ignore_wh40_batt,
                                               show_battery=show_battery,
                                               log_unknown_fields=log_unknown_fields,
                                               fw_update_check_interval=fw_update_check_interval,
@@ -2649,21 +2644,24 @@ piezo gauge are paired."""
             add_back = None
             # construct the prompt text, the prompt text will vary depending on
             # what gauges are paired
-            if len(paired_gauges) > 1:
+            if paired_gauges == 'both':
+                # both tipping and piezo are paired
                 select_1 = "'tipping' to populate the WeeWX rain fields from a paired tipping gauge"
                 select_2 = "'piezo' to populate the WeeWX rain fields from a paired piezo gauge"
                 select_3 = "'none' to not populate the WeeWX rain fields"
                 punc = ", "
                 conj = " or "
                 possible = ['tipping', 'piezo', 'none']
-            elif paired_gauges[0] == 'tipping':
+            elif paired_gauges == 'tipping':
+                # we have a paired tipping gauge
                 select_1 = "'tipping' to populate the WeeWX rain fields from a paired tipping gauge"
                 select_2 = ""
                 select_3 = "'none' to not populate the WeeWX rain fields"
                 punc = ""
                 conj = " or "
                 possible = ['tipping', 'none']
-            elif paired_gauges[0] == 'piezo':
+            else:
+                # there must be a paired piezo gauge
                 select_1 = ""
                 select_2 = "'piezo' to populate the WeeWX rain fields from a paired piezo gauge"
                 select_3 = "'none' to not populate the WeeWX rain fields"
@@ -2749,16 +2747,19 @@ piezo rain gauges respectively. WeeWX can populate the default WeeWX rain observ
                 # finessing to get the grammar correct.
                 if len(_fields) == 1:
                     # we have just one field so this is simple
-                    options = f"'{_fields[0]}'"
+                    options = f" Possible observations are '{_fields[0]}'"
                 elif len(_fields) == 2:
                     # we have two fields so separate them with 'or'
                     _options = ' or '.join(_fields)
-                    options = f"'{_options}'"
+                    options = f" Possible observations are '{_options}'"
                 elif len(_fields) > 2:
                     # we have more than two fields so comma separate the first
                     # n-1 and 'or' the last one
                     _first = ', '.join(_fields[:-1])
-                    options = ' or '.join([_first, _fields[-1]])
+                    options = f" Possible observations are {' or '.join([_first, _fields[-1]])}"
+                else:
+                    # this should not happen, but set options just in case
+                    options = ''
                 # construct the prompt text to use, it includes a list of the
                 # available possible fields
                 _prompt = f"""Select the WeeWX observation to be used to derive 
@@ -3096,7 +3097,7 @@ class EcowittHttpDriverConfigurator(weewx.drivers.AbstractConfigurator):
                           help="answer yes to every prompt")
 
     def do_options(self, options, parser, config_dict, prompt):
-        """Process wee_device option parser options."""
+        """Process weectl device option parser options."""
 
         # get station config dict to use
         stn_dict = config_dict.get('EcowittHttp', {})
@@ -3115,7 +3116,7 @@ class EcowittHttpDriverConfigurator(weewx.drivers.AbstractConfigurator):
         weeutil.logger.setup('weewx', config_dict)
 
         # define custom unit settings used by the driver
-        define_units(dict())
+        define_units()
 
         # get a DirectEcowittDevice object
         direct_http_gw = DirectEcowittDevice(options, parser, stn_dict)
@@ -4449,7 +4450,7 @@ class EcowittDeviceCatchup:
                     try:
                         converted[field] = weewx.units.convertStd(_vt,
                                                                   self.unit_system).value
-                    except:
+                    except Exception as e:
                         # an error occurred converting this field, log it and
                         # skip this field
                         if weewx.debug >= 3 or self.driver_debug.catchup:
@@ -5022,7 +5023,6 @@ class EcowittHttpCollector(Collector):
                  retry_wait=DEFAULT_RETRY_WAIT,
                  url_timeout=DEFAULT_URL_TIMEOUT,
                  unit_system=UNIT_SYSTEM,
-                 ignore_wh40_batt=True,
                  show_battery=DEFAULT_FILTER_BATTERY,
                  log_unknown_fields=False,
                  fw_update_check_interval=DEFAULT_FW_CHECK_INTERVAL,
@@ -5047,10 +5047,6 @@ class EcowittHttpCollector(Collector):
             log.debug('     available device firmware updates will be logged')
         else:
             log.debug('     device firmware update checks will not occur')
-        if ignore_wh40_batt:
-            log.debug('     battery state data will be ignored for legacy WH40')
-        else:
-            log.debug('     battery state data will be reported for legacy WH40')
         if show_battery:
             log.debug('     battery state will be reported for all sensors')
         else:
@@ -5066,23 +5062,12 @@ class EcowittHttpCollector(Collector):
                                     max_tries=max_tries,
                                     retry_wait=retry_wait,
                                     url_timeout=url_timeout,
-                                    ignore_wh40_batt=ignore_wh40_batt,
                                     show_battery=show_battery,
                                     log_unknown_fields=log_unknown_fields,
                                     debug=debug)
 
         # start by assuming we are logging failures
         self.log_failures = True
-        # TODO. How is WH40 legacy battery state handled in a HTTP API environment
-        # do we have a legacy WH40 and how are we handling its battery state
-        # data
-        # if b'\x03' in self.device.api.sensors.connected_addresses and self.device.api.sensors.legacy_wh40:
-        #     # we have a connected legacy WH40
-        #     if ignore_wh40_batt:
-        #         _msg = 'Legacy WH40 detected, WH40 battery state data will be ignored'
-        #     else:
-        #         _msg = 'Legacy WH40 detected, WH40 battery state data will be reported'
-        #     log.info(_msg)
         # create a thread property
         self.thread = None
         # we start off not collecting data, it will be turned on later when we
@@ -5241,7 +5226,7 @@ class EcowittHttpCollector(Collector):
             try:
                 # kick the collection off
                 self.client.collect()
-            except:
+            except Exception as e:
                 # we have an exception so log what we can
                 weeutil.logger.log_traceback(log.critical, '    ****  ')
 
@@ -10317,7 +10302,6 @@ class EcowittDevice:
                  max_tries=DEFAULT_MAX_TRIES,
                  retry_wait=DEFAULT_RETRY_WAIT,
                  url_timeout=DEFAULT_URL_TIMEOUT,
-                 ignore_wh40_batt=True,
                  show_battery=DEFAULT_FILTER_BATTERY,
                  log_unknown_fields=False,
                  debug=DebugOptions()):
@@ -10727,7 +10711,7 @@ class EcowittDevice:
 #                             Utility functions
 # ============================================================================
 
-def define_units(field_map):
+def define_units():
     """Define formats and conversions used by the driver.
 
     This could be done in user/extensions.py or the driver. The
@@ -12162,8 +12146,6 @@ class DirectEcowittDevice:
                       f'at {bcolors.BOLD}{device.ip_address}{bcolors.ENDC}')
                 # get the device soil_calibration_data property
                 calibration_data = device.get_soil_calibration_data()
-                # get the device units
-                device_units = device.get_device_units()
             except weewx.ViolatedPrecondition as e:
                 print()
                 print(f'Unable to obtain EcowittDevice object: {e}')
@@ -12514,7 +12496,7 @@ class DirectEcowittDevice:
                 print()
                 self.device_connection_help()
 
-    def display_sensors(self, registered_only=False):
+    def display_sensors(self):
         """Display the device sensor ID information.
 
         Obtain and display the sensor ID information from the selected device.
@@ -12762,11 +12744,7 @@ class DirectEcowittDevice:
                 # get a ValueHelper which will do the conversion and formatting
                 key_vh = weewx.units.ValueHelper(key_vt, formatter=f, converter=c)
                 # and add the converted and formatted value to our dict
-                try:
-                    result[key] = key_vh.toString(None_string='None')
-                except:
-                    result[key] = f"Unable to convert/format '{key}'"
-                    continue
+                result[key] = key_vh.toString(None_string='None')
             # finally, sort our dict by key and print the data
             print()
             print(f'Displaying data using the WeeWX '
@@ -13663,7 +13641,7 @@ def main():
     weeutil.logger.setup('ecowitt_http', config_dict)
 
     # define custom unit settings used by the driver
-    define_units(dict())
+    define_units()
 
     # get a DirectEcowittDevice object
     direct_device = DirectEcowittDevice(namespace, parser, stn_config_dict)
