@@ -28,7 +28,7 @@ Revision History
 This driver is based on the Ecowitt local HTTP API. At the time of release the
 following sensors are supported:
 
-WN31        temperature, humidity, signal level, battery state.  channels 1-8
+WN31        temperature, humidity, signal level, battery state. channels 1-8
             inclusive
 WN32P       temperature, humidity, pressure, signal level, battery state.
             single device only
@@ -166,14 +166,17 @@ DEFAULT_CATCHUP_RETRIES = 3
 DEFAULT_MAX_AGE = 60
 # default device poll interval
 DEFAULT_POLL_INTERVAL = 20
+# default discovery port
 DEFAULT_DISCOVERY_PORT = 59387
+# default discovery listening period
 DEFAULT_DISCOVERY_PERIOD = 5
+# default discovery timeout period
 DEFAULT_DISCOVERY_TIMEOUT = 2
 # default period between lost contact log entries during an extended period of
 # lost contact when run as a Service
 DEFAULT_LOST_CONTACT_LOG_PERIOD = 21600
-# unit system emitted by the driver
-UNIT_SYSTEM = weewx.METRICWX
+# default loop packet unit system emitted by the driver
+DEFAULT_UNIT_SYSTEM = weewx.METRICWX
 # default battery state filtering (whether to only display battery state data
 # for connected sensors)
 DEFAULT_FILTER_BATTERY = False
@@ -1743,7 +1746,7 @@ class EcowittHttpService(weewx.engine.StdService, EcowittCommon):
         # log our version number
         log.info('EcowittHttpService: version is %s' % DRIVER_VERSION)
         # set the unit system we will emit
-        self.unit_system = UNIT_SYSTEM
+        self.unit_system = DEFAULT_UNIT_SYSTEM
         # initialize my superclasses, we need to do this manually due to
         # differing signatures
         try:
@@ -3958,7 +3961,7 @@ class EcowittDeviceCatchup:
                                     url_timeout=self.url_timeout)
         # save the device unit system to be used, if not specified use the default
         self.unit_system = weeutil.weeutil.to_int(options.get('unit_system',
-                                                              UNIT_SYSTEM))
+                                                              DEFAULT_UNIT_SYSTEM))
         # save the grace time we will add to last_good_ts/start_ts to determine
         # which catchup records we accept
         self.catchup_grace = weeutil.weeutil.to_int(options.get('catchup_grace',
@@ -4605,7 +4608,7 @@ class EcowittHttpDriver(weewx.drivers.AbstractDevice, EcowittCommon):
         # log our version number
         log.info('EcowittHttpDriver: version is %s' % DRIVER_VERSION)
         # set the unit system we will emit
-        self.unit_system = UNIT_SYSTEM
+        self.unit_system = DEFAULT_UNIT_SYSTEM
         # now initialize my superclasses
         try:
             EcowittCommon.__init__(self, unit_system=self.unit_system, **stn_dict)
@@ -5022,7 +5025,7 @@ class EcowittHttpCollector(Collector):
                  max_tries=DEFAULT_MAX_TRIES,
                  retry_wait=DEFAULT_RETRY_WAIT,
                  url_timeout=DEFAULT_URL_TIMEOUT,
-                 unit_system=UNIT_SYSTEM,
+                 unit_system=DEFAULT_UNIT_SYSTEM,
                  show_battery=DEFAULT_FILTER_BATTERY,
                  log_unknown_fields=False,
                  fw_update_check_interval=DEFAULT_FW_CHECK_INTERVAL,
@@ -5702,7 +5705,7 @@ class EcowittHttpParser:
     # and disabled)
     not_registered = ('fffffffe', 'ffffffff')
 
-    def __init__(self, unit_system=UNIT_SYSTEM,
+    def __init__(self, unit_system=DEFAULT_UNIT_SYSTEM,
                  show_battery=DEFAULT_FILTER_BATTERY,
                  log_unknown_fields=True,
                  debug=DebugOptions()):
@@ -10298,7 +10301,7 @@ class EcowittDevice:
     sensors_with_firmware = ('ws80', 'ws85', 'ws90')
 
     def __init__(self, ip_address,
-                 unit_system=UNIT_SYSTEM,
+                 unit_system=DEFAULT_UNIT_SYSTEM,
                  max_tries=DEFAULT_MAX_TRIES,
                  retry_wait=DEFAULT_RETRY_WAIT,
                  url_timeout=DEFAULT_URL_TIMEOUT,
@@ -11244,7 +11247,7 @@ class DirectEcowittDevice:
         # save the WeeWX station dict
         self.stn_dict = stn_dict
         # save the unit system we will use
-        self.unit_system = UNIT_SYSTEM
+        self.unit_system = DEFAULT_UNIT_SYSTEM
         # save discovery parameters
         self.discovery_port = kwargs.get('discovery_port',
                                          DEFAULT_DISCOVERY_PORT)
@@ -13600,7 +13603,7 @@ def main():
     parser.add_argument('--units',
                         dest='units',
                         metavar='UNIT SYSTEM',
-                        default=weewx.units.unit_nicknames[UNIT_SYSTEM],
+                        default=weewx.units.unit_nicknames[DEFAULT_UNIT_SYSTEM],
                         help='unit system to use when displaying live data')
     parser.add_argument('--config',
                         dest='config',

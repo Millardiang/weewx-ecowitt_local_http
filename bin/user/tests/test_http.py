@@ -1189,7 +1189,7 @@ class DeviceCatchupTestCase(unittest.TestCase):
                          user.ecowitt_http.DEFAULT_URL_TIMEOUT)
         # test unit_system was properly set
         self.assertEqual(device_catchup.unit_system,
-                         user.ecowitt_http.UNIT_SYSTEM)
+                         user.ecowitt_http.DEFAULT_UNIT_SYSTEM)
         # test catchup_grace was properly set
         self.assertEqual(device_catchup.catchup_grace,
                          user.ecowitt_http.DEFAULT_CATCHUP_GRACE)
