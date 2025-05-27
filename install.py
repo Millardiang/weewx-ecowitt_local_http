@@ -53,12 +53,15 @@ ecowitt_config = """
     [[Calculations]]
         t_rain = prefer_hardware
         p_rain = prefer_hardware
+        lightning_strike_count = prefer_hardware
         
     [[Delta]]
         [[[t_rain]]]
             input = t_rainyear
         [[[p_rain]]]
             input = p_rainyear
+        [[[lightning_strike_count]]]
+            input = lightningcount
             
 [Accumulator]
 
