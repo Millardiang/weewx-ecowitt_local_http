@@ -1116,7 +1116,7 @@ class HttpMapper(FieldMapper):
     # modular rain map
     default_rain_map = {
         't_rainevent': 'rain.0x0D.val',
-        'rainRate': 'rain.0x0E.val',
+        't_rainRate': 'rain.0x0E.val',
         't_rainhour': 't_rainhour',
         't_rainday': 'rain.0x10.val',
         't_rainweek': 'rain.0x11.val',
